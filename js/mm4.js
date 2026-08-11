@@ -231,7 +231,7 @@
           function activate(value){var nativeButton=index===0&&nativeModeButton(host,value);if(nativeButton)nativeButton.click();else if(String(select.value)!==String(value))triggerSelect(select,value);setTimeout(syncModeButtons,25)}
           if(index===0&&opt.value==='am'){
             if(b.__mmAmClickTimer){clearTimeout(b.__mmAmClickTimer);b.__mmAmClickTimer=null;triggerSelect(select,'cquam');setTimeout(syncModeButtons,25);return}
-            b.__mmAmClickTimer=setTimeout(function(){b.__mmAmClickTimer=null;activate('am')},450);return;
+            b.__mmAmClickTimer=setTimeout(function(){b.__mmAmClickTimer=null;activate('am')},800);return;
           }
           activate(opt.value);
         });

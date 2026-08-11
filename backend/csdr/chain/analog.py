@@ -287,7 +287,7 @@ class CquamStereoDecoder(ThreadModule):
                 output[index + 1] = nextRight - self.dcRight
                 self.dcLeft = nextLeft
                 self.dcRight = nextRight
-            self.writer.write(memoryview(output))
+            self.writer.write(output.tobytes())
 
 
 class Cquam(BaseDemodulatorChain, FixedAudioRateChain, HdAudio):
