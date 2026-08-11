@@ -108,7 +108,7 @@ if ((ASSUME_YES == 0)); then
     [[ "$answer" =~ ^[Yy]$ ]] || { log "cancelled"; exit 0; }
 fi
 
-for command in tar find install cp grep python3 curl; do
+for command in tar find install cp grep python3 curl seq; do
     command -v "$command" >/dev/null || die "required command not found: $command"
 done
 
@@ -213,8 +213,15 @@ if ((SERVICE_EXISTS)); then
     systemctl is-active --quiet openwebrx.service || die "OpenWebRX failed to start; backup: $BACKUP_DIR"
     if ((INSTALL_BACKEND)); then
         LIVE_BUNDLE="$WORK_DIR/receiver.js"
-        curl -fsS --retry 5 --retry-delay 1 "http://127.0.0.1/compiled/receiver.js?installer=$STAMP" -o "$LIVE_BUNDLE" \
-            || die "could not verify the live receiver bundle; backup: $BACKUP_DIR"
+        BUNDLE_READY=0
+        for _ in $(seq 1 45); do
+            if curl -fsS "http://127.0.0.1/compiled/receiver.js?installer=$STAMP" -o "$LIVE_BUNDLE"; then
+                BUNDLE_READY=1
+                break
+            fi
+            sleep 1
+        done
+        ((BUNDLE_READY)) || die "could not verify the live receiver bundle; backup: $BACKUP_DIR"
         grep -q 'StereoResampler' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB stereo support; backup: $BACKUP_DIR"
         grep -q 'setHdInputRate' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB 32/48 kHz switching; backup: $BACKUP_DIR"
         grep -q 'new AudioRecorder(48000, 192, 2)' "$LIVE_BUNDLE" || die "live receiver bundle has no 192 kb/s stereo recorder; backup: $BACKUP_DIR"
