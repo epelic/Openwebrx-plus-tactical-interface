@@ -228,14 +228,15 @@
       opts.forEach(function(opt){
         var b=make('button',null,'mm-mode-key');b.type='button';b.textContent=(opt.textContent||opt.value).trim();b.dataset.value=opt.value;b.dataset.mmSelect=String(index);
         b.addEventListener('click',function(){
-          var nativeButton=index===0&&nativeModeButton(host,opt.value);
-          if(nativeButton)nativeButton.click();
-          else if(String(select.value)!==String(opt.value))triggerSelect(select,opt.value);
-          setTimeout(syncModeButtons,25);
+          function activate(value){var nativeButton=index===0&&nativeModeButton(host,value);if(nativeButton)nativeButton.click();else if(String(select.value)!==String(value))triggerSelect(select,value);setTimeout(syncModeButtons,25)}
+          if(index===0&&opt.value==='am'){
+            if(b.__mmAmClickTimer){clearTimeout(b.__mmAmClickTimer);b.__mmAmClickTimer=null;triggerSelect(select,'cquam');setTimeout(syncModeButtons,25);return}
+            b.__mmAmClickTimer=setTimeout(function(){b.__mmAmClickTimer=null;activate('am')},280);return;
+          }
+          activate(opt.value);
         });
         if(index===0&&opt.value==='am'){
           b.title='Double-click for C-QUAM AM stereo';
-          b.addEventListener('dblclick',function(e){e.preventDefault();e.stopPropagation();UI.setModulation('cquam');setTimeout(syncModeButtons,25)});
         }
         keys.appendChild(b);
       });
