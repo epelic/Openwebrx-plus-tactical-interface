@@ -4,9 +4,11 @@ from pycsdr.modules import AmDemod, DcBlock, FmDemod, Limit, NfmDeemphasis, Agc,
     WfmDeemphasis, FractionalDecimator, StereoFractionalDecimator, RealPart, Writer, Buffer
 from pycsdr.types import Format, AgcProfile
 from csdr.chain.toolbox import RdsDemodulator
+from csdr.module import ThreadModule
 from typing import Optional
 from owrx.feature import FeatureDetector
 from threading import Event, Thread
+from array import array
 import pickle
 import time
 import math
@@ -250,6 +252,57 @@ class SAm(BaseDemodulatorChain):
             agc,
         ]
         super().__init__(workers)
+
+
+class CquamStereoDecoder(ThreadModule):
+    """Convert PLL-corrected C-QUAM I/Q into interleaved L/R float PCM."""
+
+    def __init__(self):
+        self.dcLeft = 0.0
+        self.dcRight = 0.0
+        super().__init__()
+
+    def getInputFormat(self) -> Format:
+        return Format.COMPLEX_FLOAT
+
+    def getOutputFormat(self) -> Format:
+        return Format.FLOAT
+
+    def run(self):
+        alpha = 0.99
+        while self.doRun:
+            data = self.reader.read()
+            if data is None:
+                break
+            source = memoryview(data).cast("f")
+            output = array("f", [0.0]) * len(source)
+            for index in range(0, len(source) - 1, 2):
+                inPhase = source[index]
+                quadrature = source[index + 1]
+                left = inPhase + quadrature
+                right = inPhase - quadrature
+                nextLeft = left + alpha * self.dcLeft
+                nextRight = right + alpha * self.dcRight
+                output[index] = nextLeft - self.dcLeft
+                output[index + 1] = nextRight - self.dcRight
+                self.dcLeft = nextLeft
+                self.dcRight = nextRight
+            self.writer.write(memoryview(output))
+
+
+class Cquam(BaseDemodulatorChain, FixedAudioRateChain, HdAudio):
+    """Motorola C-QUAM AM stereo, following KiwiSDR's PLL I/Q matrix."""
+
+    def __init__(self, sampleRate: int = 48000):
+        self.sampleRate = sampleRate
+        workers = [
+            Afc(10, 4),
+            CquamStereoDecoder(),
+        ]
+        super().__init__(workers)
+
+    def getFixedAudioRate(self) -> int:
+        return self.sampleRate
 
 
 class SsbDigital(BaseDemodulatorChain, FixedAudioRateChain, HdAudio):
