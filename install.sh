@@ -73,6 +73,7 @@ grep -q 'openwebrx_init' "$TARGET/index.html" || die "$TARGET does not look like
 
 BACKEND_TARGET=""
 ANALOG_TARGET=""
+DAB_CHAIN_TARGET=""
 SETTINGS_FILE="/var/lib/openwebrx/settings.json"
 if ((INSTALL_BACKEND)); then
     BACKEND_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
@@ -83,6 +84,10 @@ if ((INSTALL_BACKEND)); then
         -type f -path '*/csdr/chain/analog.py' -print -quit 2>/dev/null || true)"
     [[ -n "$ANALOG_TARGET" ]] || die "csdr/chain/analog.py not found; FM stereo cannot be installed"
     ANALOG_TARGET="$(readlink -f "$ANALOG_TARGET")"
+    DAB_CHAIN_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
+        -type f -path '*/csdr/chain/dablin.py' -print -quit 2>/dev/null || true)"
+    [[ -n "$DAB_CHAIN_TARGET" ]] || die "csdr/chain/dablin.py not found; DAB stereo cannot be installed"
+    DAB_CHAIN_TARGET="$(readlink -f "$DAB_CHAIN_TARGET")"
     [[ -f "$SETTINGS_FILE" ]] || die "OpenWebRX settings not found: $SETTINGS_FILE"
 fi
 
@@ -93,6 +98,7 @@ log "OpenWebRX+ web directory: $TARGET"
 if ((INSTALL_BACKEND)); then
     log "DAB csdr module: $BACKEND_TARGET"
     log "FM stereo chain: $ANALOG_TARGET"
+    log "DAB stereo chain: $DAB_CHAIN_TARGET"
     log "OpenWebRX settings: $SETTINGS_FILE"
 fi
 log "Backup directory: $BACKUP_DIR"
@@ -130,13 +136,17 @@ SOURCE_DIR="$(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit)"
 if ((INSTALL_BACKEND)); then
     [[ -f "$SOURCE_DIR/backend/csdr/module/toolbox.py" ]] || die "DAB backend file is missing"
     [[ -f "$SOURCE_DIR/backend/csdr/chain/analog.py" ]] || die "FM stereo backend file is missing"
+    [[ -f "$SOURCE_DIR/backend/csdr/chain/dablin.py" ]] || die "DAB stereo chain file is missing"
     grep -q 'channels=int(match.group(2))' "$SOURCE_DIR/backend/csdr/module/toolbox.py" || die "DAB channel detection is missing"
     grep -q 'setHdInputRate' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB 32/48 kHz switching is missing"
     grep -q 'StereoResampler' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB stereo resampler is missing"
+    ! grep -Eq 'from pycsdr.modules import.*Downmix|workers.*Downmix' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB chain still contains a mono downmix"
+    grep -q 'DablinModule(self.processor.setAudioFormat)' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB sample-rate reporting is missing"
     grep -q 'new AudioRecorder(48000, 192, 2)' "$SOURCE_DIR/lib/AudioEngine.js" || die "192 kb/s, 48 kHz stereo MP3 recording is missing"
     grep -q 'Mp3Encoder(this.channels, sampleRate, kbps)' "$SOURCE_DIR/lib/AudioEngine.js" || die "stereo MP3 encoder is missing"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/module/toolbox.py"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/chain/analog.py"
+    python3 -m py_compile "$SOURCE_DIR/backend/csdr/chain/dablin.py"
     python3 -m json.tool "$SETTINGS_FILE" >/dev/null || die "OpenWebRX settings JSON is invalid"
 fi
 
@@ -146,6 +156,7 @@ if ((INSTALL_BACKEND)); then
     mkdir -p "$BACKUP_DIR/backend"
     cp -a "$BACKEND_TARGET" "$BACKUP_DIR/backend/toolbox.py"
     cp -a "$ANALOG_TARGET" "$BACKUP_DIR/backend/analog.py"
+    cp -a "$DAB_CHAIN_TARGET" "$BACKUP_DIR/backend/dablin.py"
     cp -a "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
 fi
 
@@ -167,6 +178,7 @@ if ((INSTALL_BACKEND)); then
     log "installing DAB and FM stereo csdr modules"
     install -m 0644 "$SOURCE_DIR/backend/csdr/module/toolbox.py" "$BACKEND_TARGET"
     install -m 0644 "$SOURCE_DIR/backend/csdr/chain/analog.py" "$ANALOG_TARGET"
+    install -m 0644 "$SOURCE_DIR/backend/csdr/chain/dablin.py" "$DAB_CHAIN_TARGET"
     log "disabling mono ADPCM compression for DAB stereo"
     python3 - "$SETTINGS_FILE" <<'PY'
 import json
@@ -205,6 +217,8 @@ with open(sys.argv[1], "r", encoding="utf-8") as source:
 PY
     grep -q 'setHdInputRate' "$TARGET/lib/AudioEngine.js" || die "installed DAB sample-rate switching is missing"
     grep -q 'StereoResampler' "$TARGET/lib/AudioEngine.js" || die "installed DAB stereo resampler is missing"
+    ! grep -Eq 'from pycsdr.modules import.*Downmix|workers.*Downmix' "$DAB_CHAIN_TARGET" || die "installed DAB chain still forces mono"
+    grep -q 'DablinModule(self.processor.setAudioFormat)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not report its sample rate"
 fi
 
 if ((SERVICE_EXISTS)); then
