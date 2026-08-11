@@ -1,5 +1,7 @@
 # OpenWebRX+ Tactical Interface
 
+Current version: **1.2.0**
+
 Customization of OpenWebRX+ for Max Mountain Station but available for all!
 
 Main Features:
@@ -76,6 +78,8 @@ If you like it , why don't offer me a beer?
 https://paypal.me/steelwood?locale.x=it_IT&country.x=IT
 
 # OpenWebRX+ Tactical Interface
+
+Versione corrente: **1.2.0**
 
 Personalizzazione di OpenWebRX+ per Max Mountain Station ma disponibile per tutti!
 

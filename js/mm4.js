@@ -48,7 +48,7 @@
     if(q('#mm-interface-footer'))return;
     var page=q('#webrx-page-container');if(!page)return;
     var footer=make('footer','mm-interface-footer');
-    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v1.1.0</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span>';
+    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v1.2.0</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span>';
     page.appendChild(footer);
   }
 
