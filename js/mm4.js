@@ -231,7 +231,7 @@
           function activate(value){var nativeButton=index===0&&nativeModeButton(host,value);if(nativeButton)nativeButton.click();else if(String(select.value)!==String(value))triggerSelect(select,value);setTimeout(syncModeButtons,25)}
           if(index===0&&opt.value==='am'){
             if(b.__mmAmClickTimer){clearTimeout(b.__mmAmClickTimer);b.__mmAmClickTimer=null;triggerSelect(select,'cquam');setTimeout(syncModeButtons,25);return}
-            b.__mmAmClickTimer=setTimeout(function(){b.__mmAmClickTimer=null;activate('am')},280);return;
+            b.__mmAmClickTimer=setTimeout(function(){b.__mmAmClickTimer=null;activate('am')},450);return;
           }
           activate(opt.value);
         });
@@ -256,7 +256,7 @@
     qa('.mm-mode-key',host).forEach(function(b){
       var index=parseInt(b.dataset.mmSelect,10),s=selects[index];
       var nativeButton=index===0&&nativeModeButton(host,b.dataset.value);
-      var cquam=b.dataset.value==='am'&&typeof UI!=='undefined'&&UI.getModulation&&UI.getModulation()==='cquam';
+      var cquam=b.dataset.value==='am'&&!!s&&String(s.value)==='cquam';
       var active=cquam||!!(nativeButton&&nativeButton.classList.contains('highlighted'))||!!s&&String(s.value)===String(b.dataset.value);
       if(b.dataset.value==='am')b.textContent=cquam?'C-QUAM':'AM';
       b.classList.toggle('mm-active',active);
