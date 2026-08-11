@@ -223,21 +223,14 @@
     selects.slice(0,2).forEach(function(select,index){
       var group=make('div',null,'mm-mode-group'),label=make('div',null,'mm-mode-label'),keys=make('div',null,'mm-mode-keys');
       label.textContent=index===0?'ANALOG':'DIGITAL';
-      var opts=validOptions(select).filter(function(o){return o.value!=='cquam'});
+      var opts=validOptions(select);
       if(!opts.length)group.classList.add('mm-empty');
       opts.forEach(function(opt){
         var b=make('button',null,'mm-mode-key');b.type='button';b.textContent=(opt.textContent||opt.value).trim();b.dataset.value=opt.value;b.dataset.mmSelect=String(index);
         b.addEventListener('click',function(){
           function activate(value){var nativeButton=index===0&&nativeModeButton(host,value);if(nativeButton)nativeButton.click();else if(String(select.value)!==String(value))triggerSelect(select,value);setTimeout(syncModeButtons,25)}
-          if(index===0&&opt.value==='am'){
-            if(b.__mmAmClickTimer){clearTimeout(b.__mmAmClickTimer);b.__mmAmClickTimer=null;triggerSelect(select,'cquam');setTimeout(syncModeButtons,25);return}
-            b.__mmAmClickTimer=setTimeout(function(){b.__mmAmClickTimer=null;activate('am')},800);return;
-          }
           activate(opt.value);
         });
-        if(index===0&&opt.value==='am'){
-          b.title='Double-click for C-QUAM AM stereo';
-        }
         keys.appendChild(b);
       });
       group.appendChild(label);group.appendChild(keys);groups.appendChild(group);
@@ -256,9 +249,7 @@
     qa('.mm-mode-key',host).forEach(function(b){
       var index=parseInt(b.dataset.mmSelect,10),s=selects[index];
       var nativeButton=index===0&&nativeModeButton(host,b.dataset.value);
-      var cquam=b.dataset.value==='am'&&!!s&&String(s.value)==='cquam';
-      var active=cquam||!!(nativeButton&&nativeButton.classList.contains('highlighted'))||!!s&&String(s.value)===String(b.dataset.value);
-      if(b.dataset.value==='am')b.textContent=cquam?'C-QUAM':'AM';
+      var active=!!(nativeButton&&nativeButton.classList.contains('highlighted'))||!!s&&String(s.value)===String(b.dataset.value);
       b.classList.toggle('mm-active',active);
     });
   }

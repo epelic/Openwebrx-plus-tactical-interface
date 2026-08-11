@@ -255,11 +255,22 @@ class SAm(BaseDemodulatorChain):
 
 
 class CquamStereoDecoder(ThreadModule):
-    """Convert PLL-corrected C-QUAM I/Q into interleaved L/R float PCM."""
+    """Synchronously recover C-QUAM I/Q and emit interleaved L/R PCM."""
 
-    def __init__(self):
+    def __init__(self, sampleRate: int):
+        self.sampleRate = sampleRate
+        zeta = 0.65
+        omegaN = 200.0
+        self.g1 = 1.0 - math.exp(-2.0 * omegaN * zeta / sampleRate)
+        self.g2 = -self.g1 + 2.0 * (1.0 - math.exp(-omegaN * zeta / sampleRate) *
+            math.cos(omegaN / sampleRate * math.sqrt(1.0 - zeta * zeta)))
+        self.phaseError = 0.0
+        self.filteredError = 0.0
+        self.omega = 0.0
+        self.omegaLimit = 2.0 * math.pi * 4000.0 / sampleRate
         self.dcLeft = 0.0
         self.dcRight = 0.0
+        self.level = 0.01
         super().__init__()
 
     def getInputFormat(self) -> Format:
@@ -269,7 +280,9 @@ class CquamStereoDecoder(ThreadModule):
         return Format.FLOAT
 
     def run(self):
-        alpha = 0.99
+        dcAlpha = 0.99
+        levelAttack = 0.01
+        levelRelease = 0.0001
         while self.doRun:
             data = self.reader.read()
             if data is None:
@@ -277,14 +290,36 @@ class CquamStereoDecoder(ThreadModule):
             source = memoryview(data).cast("f")
             output = array("f", [0.0]) * len(source)
             for index in range(0, len(source) - 1, 2):
-                inPhase = source[index]
-                quadrature = source[index + 1]
+                real = source[index]
+                imag = source[index + 1]
+                phaseSin = math.sin(self.phaseError)
+                phaseCos = math.cos(self.phaseError)
+                inPhase = phaseCos * real + phaseSin * imag
+                quadrature = -phaseSin * real + phaseCos * imag
+
+                detector = math.atan2(quadrature, inPhase)
+                previousError = self.filteredError
+                self.omega = max(-self.omegaLimit, min(self.omegaLimit,
+                    self.omega + self.g2 * detector))
+                self.filteredError = self.g1 * detector + self.omega
+                self.phaseError += previousError
+                if self.phaseError > math.pi:
+                    self.phaseError -= 2.0 * math.pi
+                elif self.phaseError < -math.pi:
+                    self.phaseError += 2.0 * math.pi
+
                 left = inPhase + quadrature
                 right = inPhase - quadrature
-                nextLeft = left + alpha * self.dcLeft
-                nextRight = right + alpha * self.dcRight
-                output[index] = nextLeft - self.dcLeft
-                output[index + 1] = nextRight - self.dcRight
+                nextLeft = left + dcAlpha * self.dcLeft
+                nextRight = right + dcAlpha * self.dcRight
+                left = nextLeft - self.dcLeft
+                right = nextRight - self.dcRight
+                peak = max(abs(left), abs(right), 1e-6)
+                coefficient = levelAttack if peak > self.level else levelRelease
+                self.level += coefficient * (peak - self.level)
+                gain = min(200.0, 0.35 / max(self.level, 1e-4))
+                output[index] = max(-0.9, min(0.9, left * gain))
+                output[index + 1] = max(-0.9, min(0.9, right * gain))
                 self.dcLeft = nextLeft
                 self.dcRight = nextRight
             self.writer.write(output.tobytes())
@@ -296,8 +331,7 @@ class Cquam(BaseDemodulatorChain, FixedAudioRateChain, HdAudio):
     def __init__(self, sampleRate: int = 48000):
         self.sampleRate = sampleRate
         workers = [
-            Afc(10, 4),
-            CquamStereoDecoder(),
+            CquamStereoDecoder(sampleRate),
         ]
         super().__init__(workers)
 
