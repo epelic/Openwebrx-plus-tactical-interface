@@ -10,6 +10,7 @@ import time
 import uuid
 
 logger = logging.getLogger(__name__)
+ANSI_ESCAPE_RE = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|[@-_])")
 
 
 class Rtl433Module(ExecModule):
@@ -121,6 +122,7 @@ class DablinModule(ExecModule):
             time.sleep(.15)
 
     def _processLogLine(self, line):
+            line = ANSI_ESCAPE_RE.sub("", line)
             logger.info("DABlin: %s", line)
             match = re.search(r"samplerate:\s*(\d+),\s*channels:\s*(\d+)", line)
             if match:
