@@ -215,7 +215,7 @@ if ((SERVICE_EXISTS)); then
         LIVE_BUNDLE="$WORK_DIR/receiver.js"
         BUNDLE_READY=0
         for _ in $(seq 1 45); do
-            if curl -fsS "http://127.0.0.1/compiled/receiver.js?installer=$STAMP" -o "$LIVE_BUNDLE"; then
+            if curl -fs "http://127.0.0.1:8073/compiled/receiver.js?installer=$STAMP" -o "$LIVE_BUNDLE"; then
                 BUNDLE_READY=1
                 break
             fi
