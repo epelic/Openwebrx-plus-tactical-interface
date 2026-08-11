@@ -73,6 +73,7 @@ grep -q 'openwebrx_init' "$TARGET/index.html" || die "$TARGET does not look like
 
 BACKEND_TARGET=""
 ANALOG_TARGET=""
+SETTINGS_FILE="/var/lib/openwebrx/settings.json"
 if ((INSTALL_BACKEND)); then
     BACKEND_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
         -type f -path '*/csdr/module/toolbox.py' -print -quit 2>/dev/null || true)"
@@ -82,6 +83,7 @@ if ((INSTALL_BACKEND)); then
         -type f -path '*/csdr/chain/analog.py' -print -quit 2>/dev/null || true)"
     [[ -n "$ANALOG_TARGET" ]] || die "csdr/chain/analog.py not found; FM stereo cannot be installed"
     ANALOG_TARGET="$(readlink -f "$ANALOG_TARGET")"
+    [[ -f "$SETTINGS_FILE" ]] || die "OpenWebRX settings not found: $SETTINGS_FILE"
 fi
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -91,6 +93,7 @@ log "OpenWebRX+ web directory: $TARGET"
 if ((INSTALL_BACKEND)); then
     log "DAB csdr module: $BACKEND_TARGET"
     log "FM stereo chain: $ANALOG_TARGET"
+    log "OpenWebRX settings: $SETTINGS_FILE"
 fi
 log "Backup directory: $BACKUP_DIR"
 
@@ -105,7 +108,7 @@ if ((ASSUME_YES == 0)); then
     [[ "$answer" =~ ^[Yy]$ ]] || { log "cancelled"; exit 0; }
 fi
 
-for command in tar find install cp; do
+for command in tar find install cp grep python3 curl; do
     command -v "$command" >/dev/null || die "required command not found: $command"
 done
 
@@ -127,8 +130,14 @@ SOURCE_DIR="$(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit)"
 if ((INSTALL_BACKEND)); then
     [[ -f "$SOURCE_DIR/backend/csdr/module/toolbox.py" ]] || die "DAB backend file is missing"
     [[ -f "$SOURCE_DIR/backend/csdr/chain/analog.py" ]] || die "FM stereo backend file is missing"
+    grep -q 'channels=int(match.group(2))' "$SOURCE_DIR/backend/csdr/module/toolbox.py" || die "DAB channel detection is missing"
+    grep -q 'setHdInputRate' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB 32/48 kHz switching is missing"
+    grep -q 'StereoResampler' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB stereo resampler is missing"
+    grep -q 'new AudioRecorder(48000, 192, 2)' "$SOURCE_DIR/lib/AudioEngine.js" || die "192 kb/s, 48 kHz stereo MP3 recording is missing"
+    grep -q 'Mp3Encoder(this.channels, sampleRate, kbps)' "$SOURCE_DIR/lib/AudioEngine.js" || die "stereo MP3 encoder is missing"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/module/toolbox.py"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/chain/analog.py"
+    python3 -m json.tool "$SETTINGS_FILE" >/dev/null || die "OpenWebRX settings JSON is invalid"
 fi
 
 mkdir -p "$BACKUP_DIR"
@@ -137,6 +146,7 @@ if ((INSTALL_BACKEND)); then
     mkdir -p "$BACKUP_DIR/backend"
     cp -a "$BACKEND_TARGET" "$BACKUP_DIR/backend/toolbox.py"
     cp -a "$ANALOG_TARGET" "$BACKUP_DIR/backend/analog.py"
+    cp -a "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
 fi
 
 SERVICE_EXISTS=0
@@ -157,14 +167,58 @@ if ((INSTALL_BACKEND)); then
     log "installing DAB and FM stereo csdr modules"
     install -m 0644 "$SOURCE_DIR/backend/csdr/module/toolbox.py" "$BACKEND_TARGET"
     install -m 0644 "$SOURCE_DIR/backend/csdr/chain/analog.py" "$ANALOG_TARGET"
+    log "disabling mono ADPCM compression for DAB stereo"
+    python3 - "$SETTINGS_FILE" <<'PY'
+import json
+import os
+import sys
+import tempfile
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as source:
+    settings = json.load(source)
+settings["audio_compression"] = "none"
+fd, temporary = tempfile.mkstemp(prefix="settings.", suffix=".json", dir=os.path.dirname(path))
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as target:
+        json.dump(settings, target, indent=4)
+        target.write("\n")
+    os.chmod(temporary, os.stat(path).st_mode)
+    os.chown(temporary, os.stat(path).st_uid, os.stat(path).st_gid)
+    os.replace(temporary, path)
+except BaseException:
+    try:
+        os.unlink(temporary)
+    except FileNotFoundError:
+        pass
+    raise
+PY
 fi
 
 [[ -s "$TARGET/index.html" && -s "$TARGET/lib/AudioProcessor.js" ]] || die "post-installation file check failed"
+if ((INSTALL_BACKEND)); then
+    python3 - "$SETTINGS_FILE" <<'PY' || die "DAB stereo post-installation check failed"
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as source:
+    assert json.load(source).get("audio_compression") == "none"
+PY
+    grep -q 'setHdInputRate' "$TARGET/lib/AudioEngine.js" || die "installed DAB sample-rate switching is missing"
+    grep -q 'StereoResampler' "$TARGET/lib/AudioEngine.js" || die "installed DAB stereo resampler is missing"
+fi
 
 if ((SERVICE_EXISTS)); then
     systemctl start openwebrx.service
     sleep 1
     systemctl is-active --quiet openwebrx.service || die "OpenWebRX failed to start; backup: $BACKUP_DIR"
+    if ((INSTALL_BACKEND)); then
+        LIVE_BUNDLE="$WORK_DIR/receiver.js"
+        curl -fsS --retry 5 --retry-delay 1 "http://127.0.0.1/compiled/receiver.js?installer=$STAMP" -o "$LIVE_BUNDLE" \
+            || die "could not verify the live receiver bundle; backup: $BACKUP_DIR"
+        grep -q 'StereoResampler' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB stereo support; backup: $BACKUP_DIR"
+        grep -q 'setHdInputRate' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB 32/48 kHz switching; backup: $BACKUP_DIR"
+        grep -q 'new AudioRecorder(48000, 192, 2)' "$LIVE_BUNDLE" || die "live receiver bundle has no 192 kb/s stereo recorder; backup: $BACKUP_DIR"
+    fi
 elif ((SERVICE_ACTIVE)); then
     log "OpenWebRX service was active but could not be restarted automatically"
 fi
