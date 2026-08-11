@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-REPO_ARCHIVE="https://github.com/epelic/Openwebrx-plus-stereo/archive/refs/heads/main.tar.gz"
+REPO_ARCHIVE="https://codeload.github.com/epelic/Openwebrx-plus-tactical-interface/tar.gz/refs/heads/main"
 TARGET=""
 INSTALL_BACKEND=1
 ASSUME_YES=0
@@ -11,7 +11,7 @@ SOURCE_DIR=""
 
 usage() {
     cat <<'EOF'
-OpenWebRX+ Stereo installer
+OpenWebRX+ Tactical Interface installer
 
 Usage: sudo ./install.sh [options]
 
@@ -24,8 +24,8 @@ Options:
 EOF
 }
 
-log() { printf '[OpenWebRX+ Stereo] %s\n' "$*"; }
-die() { printf '[OpenWebRX+ Stereo] ERROR: %s\n' "$*" >&2; exit 1; }
+log() { printf '[OpenWebRX+ Tactical Interface] %s\n' "$*"; }
+die() { printf '[OpenWebRX+ Tactical Interface] ERROR: %s\n' "$*" >&2; exit 1; }
 
 cleanup() {
     if [[ -n "${WORK_DIR:-}" && -d "$WORK_DIR" ]]; then
@@ -85,7 +85,7 @@ if ((INSTALL_BACKEND)); then
 fi
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP_DIR="/var/backups/openwebrx-plus-stereo/$STAMP"
+BACKUP_DIR="/var/backups/openwebrx-plus-tactical-interface/$STAMP"
 
 log "OpenWebRX+ web directory: $TARGET"
 if ((INSTALL_BACKEND)); then
@@ -100,7 +100,7 @@ if ((DRY_RUN)); then
 fi
 
 if ((ASSUME_YES == 0)); then
-    printf 'Install OpenWebRX+ Stereo and restart OpenWebRX? [y/N] '
+    printf 'Install OpenWebRX+ Tactical Interface and restart OpenWebRX? [y/N] '
     read -r answer
     [[ "$answer" =~ ^[Yy]$ ]] || { log "cancelled"; exit 0; }
 fi
@@ -109,7 +109,7 @@ for command in tar find install cp; do
     command -v "$command" >/dev/null || die "required command not found: $command"
 done
 
-WORK_DIR="$(mktemp -d /tmp/openwebrx-plus-stereo.XXXXXX)"
+WORK_DIR="$(mktemp -d /tmp/openwebrx-plus-tactical-interface.XXXXXX)"
 ARCHIVE="$WORK_DIR/source.tar.gz"
 if command -v curl >/dev/null; then
     curl -fL --retry 3 --connect-timeout 15 "$REPO_ARCHIVE" -o "$ARCHIVE"
@@ -119,8 +119,9 @@ else
     die "curl or wget is required to download the release"
 fi
 
+tar -tzf "$ARCHIVE" >/dev/null || die "downloaded archive is not a valid gzip tar archive"
 tar -xzf "$ARCHIVE" -C "$WORK_DIR"
-SOURCE_DIR="$(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d -name 'Openwebrx-plus-stereo-*' -print -quit)"
+SOURCE_DIR="$(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit)"
 [[ -n "$SOURCE_DIR" && -f "$SOURCE_DIR/index.html" ]] || die "downloaded archive is incomplete"
 [[ -f "$SOURCE_DIR/lib/AudioProcessor.js" && -f "$SOURCE_DIR/js/mm4.js" ]] || die "required UI files are missing"
 if ((INSTALL_BACKEND)); then
