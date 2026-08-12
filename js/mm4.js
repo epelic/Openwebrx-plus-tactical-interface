@@ -284,7 +284,7 @@
     var lowSlider=q('[data-role="low"]',row),highSlider=q('[data-role="high"]',row),lowValue=lowSlider.nextElementSibling,highValue=highSlider.nextElementSibling;
     button.addEventListener('click',function(e){e.stopPropagation();var open=row.classList.toggle('mm-open');button.setAttribute('aria-expanded',open?'true':'false')});
     document.addEventListener('click',function(e){if(!row.contains(e.target)){row.classList.remove('mm-open');button.setAttribute('aria-expanded','false')}});
-    function supported(d){return d&&['am','sam','fm','nfm','data','usb','lsb','usbd','lsbd'].indexOf(d.get_modulation())>=0&&!d.get_secondary_demod()}
+    function supported(d){return d&&['am','sam','cquam','fm','nfm','data','usb','lsb','usbd','lsbd'].indexOf(d.get_modulation())>=0&&!d.get_secondary_demod()}
     function sideband(d){return d&&['usb','lsb','usbd','lsbd'].indexOf(d.get_modulation())>=0}
     function save(d,low,high){d.setBandpass({low_cut:low,high_cut:high});if(UI.saveBandpass)UI.saveBandpass(d.get_modulation(),low,high)}
     function apply(){
