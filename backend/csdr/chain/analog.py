@@ -270,7 +270,8 @@ class CquamStereoDecoder(ThreadModule):
         self.omegaLimit = 2.0 * math.pi * 4000.0 / sampleRate
         self.dcLeft = 0.0
         self.dcRight = 0.0
-        self.level = 0.01
+        self.carrierLevel = 0.0
+        self.carrierSmoothing = 1.0 - math.exp(-1.0 / sampleRate)
         super().__init__()
 
     def getInputFormat(self) -> Format:
@@ -281,8 +282,6 @@ class CquamStereoDecoder(ThreadModule):
 
     def run(self):
         dcAlpha = 0.99
-        levelAttack = 0.01
-        levelRelease = 0.0001
         while self.doRun:
             data = self.reader.read()
             if data is None:
@@ -292,6 +291,11 @@ class CquamStereoDecoder(ThreadModule):
             for index in range(0, len(source) - 1, 2):
                 real = source[index]
                 imag = source[index + 1]
+                carrierMagnitude = math.hypot(real, imag)
+                if self.carrierLevel <= 0.0:
+                    self.carrierLevel = max(carrierMagnitude, 1e-4)
+                else:
+                    self.carrierLevel += self.carrierSmoothing * (carrierMagnitude - self.carrierLevel)
                 phaseSin = math.sin(self.phaseError)
                 phaseCos = math.cos(self.phaseError)
                 inPhase = phaseCos * real + phaseSin * imag
@@ -314,10 +318,10 @@ class CquamStereoDecoder(ThreadModule):
                 nextRight = right + dcAlpha * self.dcRight
                 left = nextLeft - self.dcLeft
                 right = nextRight - self.dcRight
-                peak = max(abs(left), abs(right), 1e-6)
-                coefficient = levelAttack if peak > self.level else levelRelease
-                self.level += coefficient * (peak - self.level)
-                gain = min(200.0, 0.35 / max(self.level, 1e-4))
+                # Use the slowly averaged RF carrier as one common gain reference.
+                # Audio-derived gain pumping creates an audible wobble when L/R
+                # contain different tones or programme material.
+                gain = min(100.0, 0.35 / max(self.carrierLevel, 1e-4))
                 output[index] = max(-0.9, min(0.9, left * gain))
                 output[index + 1] = max(-0.9, min(0.9, right * gain))
                 self.dcLeft = nextLeft
