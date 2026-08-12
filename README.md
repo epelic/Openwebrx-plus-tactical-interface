@@ -9,7 +9,7 @@ Main Features:
 - Responsive receiver interface;
 - Integrated S-meter and audio spectrum;
 - Extended DAB data info panel;
-- AM STEREO! It sucks a bit but works!
+- AM STEREO!
 - DAB+ stereo playback with dynamic support for 32 and 48 kHz;
 - Stereo recording at 192 KHz Mp3, 48 KHz
 - AM Bandwidth up to 15+15 KHz
@@ -89,7 +89,7 @@ Contiene:
 - interfaccia ricevitore responsive.
 - S-meter e spettro audio integrati.
 - Pannello dati DAB esteso.
-- AM STEREO! Tutto da migliorare ma c'è!
+- AM STEREO!
 - Riproduzione stereo DAB+ con supporto dinamico per 32 e 48 kHz.
 - Registrazione stereo a 192 kHz, MP3 a 48 kHz.
 - Larghezza di banda AM fino a 15+15 kHz.
