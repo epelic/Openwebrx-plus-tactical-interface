@@ -3,6 +3,7 @@
 Current version: **1.2.0**
 
 Customization of OpenWebRX+ for Max Mountain Station but available for all!
+*** WARNING! This interface is intentionally made to work on DESKTOP mode or big screens, not mobile size screens ***
 
 Main Features:
 
@@ -83,6 +84,7 @@ https://paypal.me/steelwood?locale.x=it_IT&country.x=IT
 Versione corrente: **1.2.0**
 
 Personalizzazione di OpenWebRX+ per Max Mountain Station ma disponibile per tutti!
+*** ATTENZIONE - L'interfaccia è volutamente scritta per funzionare su computer e schermi almeno full HD, non su smartphone. ***
 
 Contiene:
 
