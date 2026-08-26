@@ -189,6 +189,13 @@ if ((INSTALL_BACKEND)); then
     cp -a "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
 fi
 
+if ((INSTALL_BACKEND)); then
+    log "building DAB 1.14 Dynamic Label support when needed"
+    bash "$SOURCE_DIR/backend/build_dablin_dls.sh" "$SOURCE_DIR/backend/dablin-dls.patch"
+    grep -a -q 'DABlin v1.14.0' "$DAB_DLS_BINARY" || die "DAB Dynamic Label decoder is not based on version 1.14.0"
+    grep -a -q '32bit float' "$DAB_DLS_BINARY" || die "DAB Dynamic Label decoder lacks float PCM output"
+fi
+
 SERVICE_EXISTS=0
 SERVICE_ACTIVE=0
 if command -v systemctl >/dev/null && systemctl cat openwebrx.service >/dev/null 2>&1; then
@@ -258,7 +265,10 @@ PY
     grep -q '"dab_details": dict(details)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not expose service metadata"
     grep -q 'DynamicLabel:' "$BACKEND_TARGET" || die "installed DAB backend does not parse Radiotext"
     grep -q 'dab-radiotext' "$TARGET/lib/MetaPanel.js" || die "installed DAB panel has no Radiotext field"
-    grep -q '/usr/bin/dablin' "$DAB_WRAPPER_TARGET" || die "DAB metadata wrapper does not use the system decoder"
+    [[ -x "$DAB_DLS_BINARY" ]] || die "DAB Dynamic Label decoder is not installed"
+    grep -a -q 'DABlin v1.14.0' "$DAB_DLS_BINARY" || die "installed DAB Dynamic Label decoder has the wrong version"
+    grep -a -q '32bit float' "$DAB_DLS_BINARY" || die "installed DAB Dynamic Label decoder lacks float PCM output"
+    grep -q 'dablin-dls' "$DAB_WRAPPER_TARGET" || die "DAB metadata wrapper does not use the Dynamic Label decoder"
     grep -q 'class Cquam' "$ANALOG_TARGET" || die "installed C-QUAM decoder is missing"
     grep -q 'elif demod == "cquam"' "$DSP_TARGET" || die "installed C-QUAM DSP registration is missing"
     grep -q 'AnalogMode("cquam", "C-QUAM"' "$MODES_TARGET" || die "installed C-QUAM mode registration is missing"

@@ -4,7 +4,7 @@ set -euo pipefail
 PATCH_FILE="${1:?DABlin patch path is required}"
 DESTINATION="/usr/local/lib/openwebrx/dablin-dls"
 MARKER="${DESTINATION}.patch-sha256"
-SOURCE_COMMIT="96ae480f7ff6c20c9c3cdbcc35c80cf88f5ab750"
+SOURCE_COMMIT="abbcf65109b7b637d8826b2aa7bba957d5e53047"
 PATCH_SHA256="$(sha256sum "$PATCH_FILE" | cut -d' ' -f1)"
 
 if [[ -x "$DESTINATION" && -f "$MARKER" ]] &&
