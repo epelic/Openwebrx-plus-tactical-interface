@@ -159,6 +159,7 @@ if ((INSTALL_BACKEND)); then
     grep -q 'channels=int(match.group(2))' "$SOURCE_DIR/backend/csdr/module/toolbox.py" || die "DAB channel detection is missing"
     grep -q 'setHdInputRate' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB 32/48 kHz switching is missing"
     grep -q 'StereoResampler' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB stereo resampler is missing"
+    grep -q 'StereoBiquadLowpass' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB anti-imaging audio filter is missing"
     ! grep -Eq 'from pycsdr.modules import.*Downmix|workers.*Downmix' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB chain still contains a mono downmix"
     grep -q 'DablinModule(self.processor.setAudioFormat)' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB sample-rate reporting is missing"
     grep -q '"dab_details": dict(details)' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB metadata envelope is missing"
@@ -260,6 +261,7 @@ with open(sys.argv[1], "r", encoding="utf-8") as source:
 PY
     grep -q 'setHdInputRate' "$TARGET/lib/AudioEngine.js" || die "installed DAB sample-rate switching is missing"
     grep -q 'StereoResampler' "$TARGET/lib/AudioEngine.js" || die "installed DAB stereo resampler is missing"
+    grep -q 'StereoBiquadLowpass' "$TARGET/lib/AudioEngine.js" || die "installed DAB anti-imaging audio filter is missing"
     ! grep -Eq 'from pycsdr.modules import.*Downmix|workers.*Downmix' "$DAB_CHAIN_TARGET" || die "installed DAB chain still forces mono"
     grep -q 'DablinModule(self.processor.setAudioFormat)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not report its sample rate"
     grep -q '"dab_details": dict(details)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not expose service metadata"
