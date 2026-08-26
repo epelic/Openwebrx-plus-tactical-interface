@@ -74,6 +74,8 @@ grep -q 'openwebrx_init' "$TARGET/index.html" || die "$TARGET does not look like
 BACKEND_TARGET=""
 ANALOG_TARGET=""
 DAB_CHAIN_TARGET=""
+DAB_WRAPPER_TARGET=""
+DAB_DLS_BINARY="/usr/local/lib/openwebrx/dablin-dls"
 DSP_TARGET=""
 MODES_TARGET=""
 SETTINGS_FILE="/var/lib/openwebrx/settings.json"
@@ -90,6 +92,7 @@ if ((INSTALL_BACKEND)); then
         -type f -path '*/csdr/chain/dablin.py' -print -quit 2>/dev/null || true)"
     [[ -n "$DAB_CHAIN_TARGET" ]] || die "csdr/chain/dablin.py not found; DAB stereo cannot be installed"
     DAB_CHAIN_TARGET="$(readlink -f "$DAB_CHAIN_TARGET")"
+    DAB_WRAPPER_TARGET="$(dirname "$BACKEND_TARGET")/dablin-metadata-wrapper"
     DSP_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
         -type f -path '*/owrx/dsp.py' -print -quit 2>/dev/null || true)"
     MODES_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
@@ -108,6 +111,7 @@ if ((INSTALL_BACKEND)); then
     log "DAB csdr module: $BACKEND_TARGET"
     log "FM stereo chain: $ANALOG_TARGET"
     log "DAB stereo chain: $DAB_CHAIN_TARGET"
+    log "DAB DLS wrapper: $DAB_WRAPPER_TARGET"
     log "C-QUAM mode registry: $DSP_TARGET, $MODES_TARGET"
     log "OpenWebRX settings: $SETTINGS_FILE"
 fi
@@ -149,6 +153,8 @@ if ((INSTALL_BACKEND)); then
     [[ -f "$SOURCE_DIR/backend/csdr/module/toolbox.py" ]] || die "DAB backend file is missing"
     [[ -f "$SOURCE_DIR/backend/csdr/chain/analog.py" ]] || die "FM stereo backend file is missing"
     [[ -f "$SOURCE_DIR/backend/csdr/chain/dablin.py" ]] || die "DAB stereo chain file is missing"
+    [[ -f "$SOURCE_DIR/backend/csdr/module/dablin-metadata-wrapper" ]] || die "DAB metadata wrapper is missing"
+    [[ -f "$SOURCE_DIR/backend/build_dablin_dls.sh" && -f "$SOURCE_DIR/backend/dablin-dls.patch" ]] || die "DAB DLS build files are missing"
     [[ -f "$SOURCE_DIR/backend/enable_cquam.py" ]] || die "C-QUAM mode installer is missing"
     grep -q 'channels=int(match.group(2))' "$SOURCE_DIR/backend/csdr/module/toolbox.py" || die "DAB channel detection is missing"
     grep -q 'setHdInputRate' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB 32/48 kHz switching is missing"
@@ -156,6 +162,8 @@ if ((INSTALL_BACKEND)); then
     ! grep -Eq 'from pycsdr.modules import.*Downmix|workers.*Downmix' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB chain still contains a mono downmix"
     grep -q 'DablinModule(self.processor.setAudioFormat)' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB sample-rate reporting is missing"
     grep -q '"dab_details": dict(details)' "$SOURCE_DIR/backend/csdr/chain/dablin.py" || die "DAB metadata envelope is missing"
+    grep -q 'DynamicLabel:' "$SOURCE_DIR/backend/csdr/module/toolbox.py" || die "DAB Radiotext parser is missing"
+    grep -q 'dab-radiotext' "$SOURCE_DIR/lib/MetaPanel.js" || die "DAB Radiotext UI is missing"
     grep -q 'class Cquam' "$SOURCE_DIR/backend/csdr/chain/analog.py" || die "C-QUAM decoder is missing"
     grep -q "modulation === 'cquam'" "$SOURCE_DIR/lib/AudioEngine.js" || die "browser C-QUAM stereo support is missing"
     grep -q 'new AudioRecorder(48000, 192, 2)' "$SOURCE_DIR/lib/AudioEngine.js" || die "192 kb/s, 48 kHz stereo MP3 recording is missing"
@@ -174,9 +182,16 @@ if ((INSTALL_BACKEND)); then
     cp -a "$BACKEND_TARGET" "$BACKUP_DIR/backend/toolbox.py"
     cp -a "$ANALOG_TARGET" "$BACKUP_DIR/backend/analog.py"
     cp -a "$DAB_CHAIN_TARGET" "$BACKUP_DIR/backend/dablin.py"
+    [[ ! -f "$DAB_WRAPPER_TARGET" ]] || cp -a "$DAB_WRAPPER_TARGET" "$BACKUP_DIR/backend/dablin-metadata-wrapper"
+    [[ ! -f "$DAB_DLS_BINARY" ]] || cp -a "$DAB_DLS_BINARY" "$BACKUP_DIR/backend/dablin-dls"
     cp -a "$DSP_TARGET" "$BACKUP_DIR/backend/dsp.py"
     cp -a "$MODES_TARGET" "$BACKUP_DIR/backend/modes.py"
     cp -a "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
+fi
+
+if ((INSTALL_BACKEND)); then
+    log "building DAB Dynamic Label support when needed"
+    bash "$SOURCE_DIR/backend/build_dablin_dls.sh" "$SOURCE_DIR/backend/dablin-dls.patch"
 fi
 
 SERVICE_EXISTS=0
@@ -198,6 +213,7 @@ if ((INSTALL_BACKEND)); then
     install -m 0644 "$SOURCE_DIR/backend/csdr/module/toolbox.py" "$BACKEND_TARGET"
     install -m 0644 "$SOURCE_DIR/backend/csdr/chain/analog.py" "$ANALOG_TARGET"
     install -m 0644 "$SOURCE_DIR/backend/csdr/chain/dablin.py" "$DAB_CHAIN_TARGET"
+    install -m 0755 "$SOURCE_DIR/backend/csdr/module/dablin-metadata-wrapper" "$DAB_WRAPPER_TARGET"
     log "registering the C-QUAM demodulator"
     python3 "$SOURCE_DIR/backend/enable_cquam.py" --dsp "$DSP_TARGET" --modes "$MODES_TARGET"
     python3 "$SOURCE_DIR/backend/enable_cquam.py" --check --dsp "$DSP_TARGET" --modes "$MODES_TARGET"
@@ -245,6 +261,10 @@ PY
     ! grep -Eq 'from pycsdr.modules import.*Downmix|workers.*Downmix' "$DAB_CHAIN_TARGET" || die "installed DAB chain still forces mono"
     grep -q 'DablinModule(self.processor.setAudioFormat)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not report its sample rate"
     grep -q '"dab_details": dict(details)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not expose service metadata"
+    grep -q 'DynamicLabel:' "$BACKEND_TARGET" || die "installed DAB backend does not parse Radiotext"
+    grep -q 'dab-radiotext' "$TARGET/lib/MetaPanel.js" || die "installed DAB panel has no Radiotext field"
+    [[ -x "$DAB_DLS_BINARY" ]] || die "DAB Dynamic Label decoder is not installed"
+    grep -q 'dablin-dls' "$DAB_WRAPPER_TARGET" || die "DAB metadata wrapper does not use the Dynamic Label decoder"
     grep -q 'class Cquam' "$ANALOG_TARGET" || die "installed C-QUAM decoder is missing"
     grep -q 'elif demod == "cquam"' "$DSP_TARGET" || die "installed C-QUAM DSP registration is missing"
     grep -q 'AnalogMode("cquam", "C-QUAM"' "$MODES_TARGET" || die "installed C-QUAM mode registration is missing"
@@ -270,6 +290,7 @@ if ((SERVICE_EXISTS)); then
         grep -q 'new AudioRecorder(48000, 192, 2)' "$LIVE_BUNDLE" || die "live receiver bundle has no 192 kb/s stereo recorder; backup: $BACKUP_DIR"
         grep -q "modulation === 'cquam'" "$LIVE_BUNDLE" || die "live receiver bundle has no C-QUAM stereo support; backup: $BACKUP_DIR"
         grep -q 'formattedEnsembleId' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB Ensemble ID normalization; backup: $BACKUP_DIR"
+        grep -q 'dab-radiotext' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB Radiotext UI; backup: $BACKUP_DIR"
     fi
 elif ((SERVICE_ACTIVE)); then
     log "OpenWebRX service was active but could not be restarted automatically"

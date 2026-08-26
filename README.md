@@ -10,6 +10,7 @@ Main Features:
 - Responsive receiver interface;
 - Integrated S-meter and audio spectrum;
 - Extended DAB data info panel;
+- DAB Dynamic Label (Radiotext / now playing) in the station panel;
 - C-QUAM * AM STEREO! Sometimes I test my hAckMstereo software on 1530 Khz so you can try it!
 - DAB+ stereo playback with dynamic support for 32 and 48 kHz;
 - Stereo recording at 192 KHz Mp3, 48 KHz
@@ -94,6 +95,7 @@ Contiene:
 - interfaccia ricevitore responsive.
 - S-meter e spettro audio integrati.
 - Pannello dati DAB esteso.
+- Dynamic Label DAB (Radiotext / brano in onda) nel pannello della stazione.
 - C-QUAM * AM STEREO! Ogni tanto sono in test con hAckMstereo su 1530 KHz così puoi provarlo!
 - Riproduzione stereo DAB+ con supporto dinamico per 32 e 48 kHz.
 - Registrazione stereo a 192 kHz, MP3 a 48 kHz.

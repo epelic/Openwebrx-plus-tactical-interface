@@ -1,0 +1,85 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index b697b60..4f7ef16 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -19,6 +19,8 @@ list(APPEND dablin_sources
+     )
+ 
+ set(dablin_cli_sources
++    mot_manager.cpp
++    pad_decoder.cpp
+     dablin.cpp
+     )
+ 
+diff --git a/src/dablin.cpp b/src/dablin.cpp
+index 04acd8d..6de8808 100644
+--- a/src/dablin.cpp
++++ b/src/dablin.cpp
+@@ -274,6 +274,7 @@ DABlinText::DABlinText(DABlinTextOptions options) {
+ 	}
+ 
+ 	fic_decoder = new FICDecoder(this, options.disable_dyn_fic_msgs);
++	pad_decoder = new PADDecoder(this, false);
+ }
+ 
+ DABlinText::~DABlinText() {
+@@ -281,6 +282,19 @@ DABlinText::~DABlinText() {
+ 	delete ensemble_source;
+ 	delete ensemble_player;
+ 	delete fic_decoder;
++	delete pad_decoder;
++}
++
++void DABlinText::PADChangeDynamicLabel(const DL_STATE& dl) {
++	if(dl.charset == -1) {
++		fprintf(stderr, "DynamicLabel: \n");
++		return;
++	}
++
++	std::string charset_name;
++	std::string label = CharsetTools::ConvertTextToUTF8(&dl.raw[0], dl.raw.size(), dl.charset, false, &charset_name);
++	if(!charset_name.empty())
++		fprintf(stderr, "DynamicLabel: %s\n", label.c_str());
+ }
+ 
+ void DABlinText::EnsembleUpdateProgress(const ENSEMBLE_PROGRESS& progress) {
+diff --git a/src/dablin.h b/src/dablin.h
+index b57570d..87f0637 100644
+--- a/src/dablin.h
++++ b/src/dablin.h
+@@ -29,6 +29,7 @@
+ #include "edi_source.h"
+ #include "edi_player.h"
+ #include "fic_decoder.h"
++#include "pad_decoder.h"
+ #include "tools.h"
+ #include "version.h"
+ 
+@@ -71,21 +72,26 @@ DABlinTextOptions() :
+ 
+ 
+ // --- DABlinText -----------------------------------------------------------------
+-class DABlinText : EnsembleSourceObserver, EnsemblePlayerObserver, FICDecoderObserver {
++class DABlinText : EnsembleSourceObserver, EnsemblePlayerObserver, FICDecoderObserver, PADDecoderObserver {
+ private:
+ 	DABlinTextOptions options;
+ 
+ 	EnsembleSource *ensemble_source;
+ 	EnsemblePlayer *ensemble_player;
+ 	FICDecoder *fic_decoder;
++	PADDecoder *pad_decoder;
+ 
+ 	void EnsembleProcessFrame(const uint8_t *data) {ensemble_player->ProcessFrame(data);}
+ 	void EnsembleUpdateProgress(const ENSEMBLE_PROGRESS& progress);
+ 
+ 	void EnsembleProcessFIC(const uint8_t *data, size_t len) {fic_decoder->Process(data, len);}
++	void EnsembleProcessPAD(const uint8_t *xpad_data, size_t xpad_len, bool exact_xpad_len, const uint8_t *fpad_data) {
++		pad_decoder->Process(xpad_data, xpad_len, exact_xpad_len, fpad_data);
++	}
+ 
+ 	void FICChangeService(const LISTED_SERVICE& service);
+ 	void FICDiscardedFIB();
++	void PADChangeDynamicLabel(const DL_STATE& dl);
+ public:
+ 	DABlinText(DABlinTextOptions options);
+ 	~DABlinText();

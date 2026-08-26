@@ -290,7 +290,7 @@ select,input[type=text],input[type=number],input[type=password]{max-width:100%!i
 #openwebrx-panel-metadata-dab .dab-container{display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(140px,.8fr)!important;gap:10px!important;width:100%!important;padding:10px!important;box-sizing:border-box!important}
 #openwebrx-panel-metadata-dab:before{display:none!important;content:none!important}
 #openwebrx-panel-metadata-dab .dab-info-column{display:flex!important;flex-direction:column!important;gap:5px!important;min-width:0!important}
-#openwebrx-panel-metadata-dab .dab-programme-slot select{width:100%!important;max-width:none!important}
+#openwebrx-panel-metadata-dab .dab-programme-slot select{width:100%!important;max-width:none!important;height:30px!important;padding:4px 28px 4px 9px!important;font:10px/1.2 "Roboto Mono",monospace!important;letter-spacing:.45px!important;text-align:left!important;text-transform:uppercase!important}
 #openwebrx-panel-metadata-dab .dab-technical-grid{display:grid!important;grid-template-columns:max-content minmax(0,1fr)!important;gap:4px 10px!important;margin-top:7px!important;padding-top:8px!important;border-top:1px solid #294b34!important;font-size:10px!important}
 #openwebrx-panel-metadata-dab .dab-technical-grid span{color:#789481!important;text-transform:uppercase!important;letter-spacing:.35px!important}
 #openwebrx-panel-metadata-dab .dab-technical-grid b{color:#c9ead0!important;font-weight:500!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
@@ -305,6 +305,9 @@ select,input[type=text],input[type=number],input[type=password]{max-width:100%!i
 #openwebrx-panel-metadata-dab .dab-logo-signal{color:#a9cdb1!important}
 #openwebrx-panel-metadata-dab .dab-station-column{justify-content:flex-start!important;min-height:210px!important}
 #openwebrx-panel-metadata-dab .dab-station-name{padding:22px 10px!important;color:#d7f7dd!important;text-align:center!important;font-size:16px!important;letter-spacing:.7px!important;border-bottom:1px solid #203c28!important}
+#openwebrx-panel-metadata-dab .dab-radiotext{min-height:56px!important;padding:8px 10px!important;border-bottom:1px solid #203c28!important;background:#07110a!important;text-align:center!important;font-family:"Roboto Mono",monospace!important}
+#openwebrx-panel-metadata-dab .dab-radiotext span{display:block!important;margin-bottom:5px!important;color:#67856f!important;font-size:8px!important;letter-spacing:1px!important}
+#openwebrx-panel-metadata-dab .dab-radiotext b{display:block!important;color:var(--mm-amber)!important;font-size:10px!important;font-weight:500!important;line-height:1.35!important;overflow-wrap:anywhere!important}
 #openwebrx-panel-metadata-dab .dab-vu{padding:12px 14px 8px!important;display:flex!important;flex-direction:column!important;gap:6px!important}
 #openwebrx-panel-metadata-dab .dab-vu-row{display:flex!important;align-items:center!important;gap:7px!important;color:#8fb59a!important;font-size:9px!important}
 #openwebrx-panel-metadata-dab .dab-vu-row>i{display:block!important;flex:1!important;height:7px!important;background:#101812!important;border:1px solid #294a32!important;overflow:hidden!important}

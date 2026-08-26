@@ -143,6 +143,9 @@ class DablinModule(ExecModule):
             match = re.search(r"format:\s+(.+?),\s+(\d+)\s+kHz\s+([^@]+?)\s+@\s+(\d+)\s+kBit/s", line)
             if match:
                 self.details.update(codec=match.group(1), sample_rate=int(match.group(2)) * 1000, audio_mode=match.group(3).strip(), audio_bitrate=int(match.group(4)))
+            match = re.search(r"DynamicLabel:\s*(.*)$", line)
+            if match:
+                self.details["radiotext"] = match.group(1).strip()
             selected = self.services.get(self.serviceId, {})
             self.details.update(selected)
             self.details.update(self.subchannels.get(self.details.get("subchannel"), {}))
