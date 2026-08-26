@@ -189,11 +189,6 @@ if ((INSTALL_BACKEND)); then
     cp -a "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
 fi
 
-if ((INSTALL_BACKEND)); then
-    log "building DAB Dynamic Label support when needed"
-    bash "$SOURCE_DIR/backend/build_dablin_dls.sh" "$SOURCE_DIR/backend/dablin-dls.patch"
-fi
-
 SERVICE_EXISTS=0
 SERVICE_ACTIVE=0
 if command -v systemctl >/dev/null && systemctl cat openwebrx.service >/dev/null 2>&1; then
@@ -263,8 +258,7 @@ PY
     grep -q '"dab_details": dict(details)' "$DAB_CHAIN_TARGET" || die "installed DAB chain does not expose service metadata"
     grep -q 'DynamicLabel:' "$BACKEND_TARGET" || die "installed DAB backend does not parse Radiotext"
     grep -q 'dab-radiotext' "$TARGET/lib/MetaPanel.js" || die "installed DAB panel has no Radiotext field"
-    [[ -x "$DAB_DLS_BINARY" ]] || die "DAB Dynamic Label decoder is not installed"
-    grep -q 'dablin-dls' "$DAB_WRAPPER_TARGET" || die "DAB metadata wrapper does not use the Dynamic Label decoder"
+    grep -q '/usr/bin/dablin' "$DAB_WRAPPER_TARGET" || die "DAB metadata wrapper does not use the system decoder"
     grep -q 'class Cquam' "$ANALOG_TARGET" || die "installed C-QUAM decoder is missing"
     grep -q 'elif demod == "cquam"' "$DSP_TARGET" || die "installed C-QUAM DSP registration is missing"
     grep -q 'AnalogMode("cquam", "C-QUAM"' "$MODES_TARGET" || die "installed C-QUAM mode registration is missing"

@@ -2,6 +2,4 @@
 set -euo pipefail
 log_path="$1"
 shift
-dablin_binary="/usr/local/lib/openwebrx/dablin-dls"
-[[ -x "$dablin_binary" ]] || dablin_binary="/usr/bin/dablin"
-exec "$dablin_binary" "$@" 2> >(tee "$log_path" >&2)
+exec /usr/bin/dablin "$@" 2> >(tee "$log_path" >&2)
