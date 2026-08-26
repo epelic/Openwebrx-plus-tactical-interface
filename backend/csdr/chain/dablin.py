@@ -3,7 +3,7 @@ from csdr.chain.demodulator import BaseDemodulatorChain, FixedIfSampleRateChain,
 from csdr.module import PickleModule
 from csdreti.modules import EtiDecoder
 from csdr.module.toolbox import DablinModule
-from pycsdr.modules import Buffer, Shift, Writer
+from pycsdr.modules import Buffer, Gain, Shift, Writer
 from pycsdr.types import Format
 from typing import Optional
 from random import random
@@ -86,10 +86,14 @@ class Dablin(BaseDemodulatorChain, FixedIfSampleRateChain, FixedAudioRateChain, 
         self.processor.setWriter(Buffer(Format.CHAR))
 
         self.dablin = DablinModule(self.processor.setAudioFormat)
+        # Apply DAB headroom while samples are still float. Applying it in the
+        # browser is too late: peaks above 0 dBFS have already clipped during
+        # the transport conversion to signed 16-bit PCM.
+        self.audioGain = Gain(Format.FLOAT, 10 ** (-9 / 20))
 
         # Dablin emits interleaved float PCM. Keep both channels; Downmix here
         # would halve the frame count and make the browser play DAB at 2x pitch.
-        workers = [shift, self.decoder, self.dablin]
+        workers = [shift, self.decoder, self.dablin, self.audioGain]
         super().__init__(workers)
 
     def _connect(self, w1, w2, buffer: Optional[Buffer] = None) -> None:
