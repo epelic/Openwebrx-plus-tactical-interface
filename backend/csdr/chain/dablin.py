@@ -89,7 +89,7 @@ class Dablin(BaseDemodulatorChain, FixedIfSampleRateChain, FixedAudioRateChain, 
         # Apply DAB headroom while samples are still float. Applying it in the
         # browser is too late: peaks above 0 dBFS have already clipped during
         # the transport conversion to signed 16-bit PCM.
-        self.audioGain = Gain(Format.FLOAT, 10 ** (-9 / 20))
+        self.audioGain = Gain(Format.FLOAT, 10 ** (-6 / 20))
 
         # Dablin emits interleaved float PCM. Keep both channels; Downmix here
         # would halve the frame count and make the browser play DAB at 2x pitch.
