@@ -74,6 +74,9 @@ curl -fsSL https://raw.githubusercontent.com/epelic/Openwebrx-plus-tactical-inte
 The backup path is printed at the end of the installation. This customization
 tracks the OpenWebRX+ package layout used by the Max Mountain Station; review
 the diff and keep a system backup when installing on a different release.
+Re-running the installer after an OpenWebRX+ package update restores the DAB
+metadata envelope and Ensemble ID normalization, and verifies both before the
+service is returned to use.
 
 If you like it , why don't offer me a beer? 
 
@@ -149,6 +152,9 @@ Al termine viene mostrato il percorso del backup. La personalizzazione segue
 la struttura del pacchetto OpenWebRX+ usato da Max Mountain Station: su una
 release differente è consigliabile controllare il diff e conservare anche un
 backup completo del sistema.
+Eseguendo nuovamente lo script dopo un aggiornamento del pacchetto OpenWebRX+
+vengono ripristinate e verificate sia la struttura dei metadati DAB sia la
+normalizzazione dell'Ensemble ID.
 
 Se ti piace, offrimi una birra!
 

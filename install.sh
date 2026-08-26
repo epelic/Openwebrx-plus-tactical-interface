@@ -144,6 +144,7 @@ SOURCE_DIR="$(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit)"
 [[ -n "$SOURCE_DIR" && -f "$SOURCE_DIR/index.html" ]] || die "downloaded archive is incomplete"
 [[ -f "$SOURCE_DIR/lib/AudioProcessor.js" && -f "$SOURCE_DIR/js/mm4.js" ]] || die "required UI files are missing"
 grep -Fq "'am','sam','cquam'" "$SOURCE_DIR/js/mm4.js" || die "C-QUAM FILTER BW control is missing from the downloaded interface"
+grep -q 'formattedEnsembleId' "$SOURCE_DIR/lib/MetaPanel.js" || die "DAB Ensemble ID normalization is missing"
 if ((INSTALL_BACKEND)); then
     [[ -f "$SOURCE_DIR/backend/csdr/module/toolbox.py" ]] || die "DAB backend file is missing"
     [[ -f "$SOURCE_DIR/backend/csdr/chain/analog.py" ]] || die "FM stereo backend file is missing"
@@ -231,6 +232,7 @@ fi
 
 [[ -s "$TARGET/index.html" && -s "$TARGET/lib/AudioProcessor.js" ]] || die "post-installation file check failed"
 grep -Fq "'am','sam','cquam'" "$TARGET/js/mm4.js" || die "installed C-QUAM FILTER BW control is missing"
+grep -q 'formattedEnsembleId' "$TARGET/lib/MetaPanel.js" || die "installed DAB Ensemble ID normalization is missing"
 if ((INSTALL_BACKEND)); then
     python3 - "$SETTINGS_FILE" <<'PY' || die "DAB stereo post-installation check failed"
 import json
@@ -267,6 +269,7 @@ if ((SERVICE_EXISTS)); then
         grep -q 'setHdInputRate' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB 32/48 kHz switching; backup: $BACKUP_DIR"
         grep -q 'new AudioRecorder(48000, 192, 2)' "$LIVE_BUNDLE" || die "live receiver bundle has no 192 kb/s stereo recorder; backup: $BACKUP_DIR"
         grep -q "modulation === 'cquam'" "$LIVE_BUNDLE" || die "live receiver bundle has no C-QUAM stereo support; backup: $BACKUP_DIR"
+        grep -q 'formattedEnsembleId' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB Ensemble ID normalization; backup: $BACKUP_DIR"
     fi
 elif ((SERVICE_ACTIVE)); then
     log "OpenWebRX service was active but could not be restarted automatically"
