@@ -148,6 +148,7 @@ SOURCE_DIR="$(find "$WORK_DIR" -mindepth 1 -maxdepth 1 -type d -print -quit)"
 [[ -n "$SOURCE_DIR" && -f "$SOURCE_DIR/index.html" ]] || die "downloaded archive is incomplete"
 [[ -f "$SOURCE_DIR/lib/AudioProcessor.js" && -f "$SOURCE_DIR/js/mm4.js" ]] || die "required UI files are missing"
 grep -Fq "'am','sam','cquam'" "$SOURCE_DIR/js/mm4.js" || die "C-QUAM FILTER BW control is missing from the downloaded interface"
+grep -q 'node=audioEngine.audioNode' "$SOURCE_DIR/js/mm4.js" || die "pre-volume audio analyzer tap is missing"
 grep -q 'formattedEnsembleId' "$SOURCE_DIR/lib/MetaPanel.js" || die "DAB Ensemble ID normalization is missing"
 if ((INSTALL_BACKEND)); then
     [[ -f "$SOURCE_DIR/backend/csdr/module/toolbox.py" ]] || die "DAB backend file is missing"
@@ -252,6 +253,7 @@ fi
 
 [[ -s "$TARGET/index.html" && -s "$TARGET/lib/AudioProcessor.js" ]] || die "post-installation file check failed"
 grep -Fq "'am','sam','cquam'" "$TARGET/js/mm4.js" || die "installed C-QUAM FILTER BW control is missing"
+grep -q 'node=audioEngine.audioNode' "$TARGET/js/mm4.js" || die "installed pre-volume audio analyzer tap is missing"
 grep -q 'formattedEnsembleId' "$TARGET/lib/MetaPanel.js" || die "installed DAB Ensemble ID normalization is missing"
 if ((INSTALL_BACKEND)); then
     python3 - "$SETTINGS_FILE" <<'PY' || die "DAB stereo post-installation check failed"

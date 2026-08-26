@@ -165,7 +165,13 @@
     function connect(){
       if(analyser)return true;
       try{
-        var sources=window.__mmAudioSources||[],node=sources[sources.length-1];
+        var sources=window.__mmAudioSources||[],node=null;
+        /* Read the decoded signal before gainNode so the spectrum represents
+           the station audio and does not move with volume or mute. */
+        if(typeof audioEngine!=='undefined'&&audioEngine){
+          node=audioEngine.audioNode;
+          if(!node)return false;
+        }else node=sources[sources.length-1];
         if(!node||!node.context)return false;
         analyser=node.context.createAnalyser();
         analyser.fftSize=2048;analyser.smoothingTimeConstant=.72;analyser.minDecibels=-105;analyser.maxDecibels=-15;
