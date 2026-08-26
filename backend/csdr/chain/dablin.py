@@ -48,9 +48,13 @@ class MetaProcessor(PickleModule):
     def setAudioFormat(self, sampleRate: int, channels: int, details: dict) -> None:
         if sampleRate not in (32000, 48000) or channels not in (1, 2):
             return
-        update = dict(details)
-        update["audio_sample_rate"] = sampleRate
-        update["audio_channels"] = channels
+        # Keep the transport fields at the top level, but preserve the
+        # DAB-specific payload under the key consumed by DabMetaPanel.
+        update = {
+            "audio_sample_rate": sampleRate,
+            "audio_channels": channels,
+            "dab_details": dict(details),
+        }
         with self.audioDetailsLock:
             self.audioDetails = update
 
