@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var MM_VERSION='1.3.0';
+  var MM_VERSION='1.3.1';
   var MM_EQ_FREQUENCIES=[31,62,125,250,500,1000,2000,4000,8000,16000];
   window.openPropagationMap=function(){
     var mapWindow=window.open('https://vhf.dxview.org/map?center=47.19,10.12,6.3','openwebrx-propagation','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');
@@ -155,20 +155,30 @@
 
   function addAudioEqualizer(){
     var module=q('#mm-audio-module');if(!module||q('#mm-audio-eq'))return;
-    var eq=make('section','mm-audio-eq'),head=make('div','mm-eq-head'),bands=make('div','mm-eq-bands');
-    head.innerHTML='<span>10-BAND PARAMETRIC EQ</span><button type="button" id="mm-eq-reset">FLAT</button>';eq.appendChild(head);eq.appendChild(bands);module.appendChild(eq);
+    var eq=make('section','mm-audio-eq'),head=make('div','mm-eq-head'),canvas=make('canvas','mm-eq-graph');
+    canvas.width=700;canvas.height=170;canvas.tabIndex=0;canvas.setAttribute('aria-label','10 band equalizer: drag points vertically to adjust gain');
+    head.innerHTML='<span>10-BAND EQ</span><span id="mm-eq-readout">SELECT A BAND</span><button type="button" id="mm-eq-reset">FLAT</button>';eq.appendChild(head);eq.appendChild(canvas);module.appendChild(eq);
     var saved=[];try{saved=JSON.parse(localStorage.getItem('mm-eq-gains')||'[]')}catch(e){}
+    var gains=MM_EQ_FREQUENCIES.map(function(freq,index){return isFinite(saved[index])?Math.max(-12,Math.min(12,saved[index])):0}),active=-1,dragging=false;
+    var ctx=canvas.getContext('2d'),readout=q('#mm-eq-readout');
     function label(freq){return freq>=1000?(freq/1000)+'k':String(freq)}
     function applyBand(index,gain){(window.__mmEqualizers||[]).forEach(function(chain){if(chain.filters[index])chain.filters[index].gain.value=gain})}
-    MM_EQ_FREQUENCIES.forEach(function(freq,index){
-      var band=make('label',null,'mm-eq-band'),gain=isFinite(saved[index])?Math.max(-12,Math.min(12,saved[index])):0;
-      band.innerHTML='<output>'+gain.toFixed(0)+'</output><input type="range" min="-12" max="12" step="1" value="'+gain+'" aria-label="'+freq+' Hz gain"><span>'+label(freq)+'</span>';
-      var input=q('input',band),output=q('output',band);
-      input.addEventListener('input',function(){var value=parseFloat(input.value)||0;output.value=value.toFixed(0);applyBand(index,value);save()});bands.appendChild(band);
-    });
-    function save(){localStorage.setItem('mm-eq-gains',JSON.stringify(qa('input',bands).map(function(input){return parseFloat(input.value)||0})))}
-    function applyAll(){qa('input',bands).forEach(function(input,index){applyBand(index,parseFloat(input.value)||0)})}
-    q('#mm-eq-reset').addEventListener('click',function(){qa('input',bands).forEach(function(input){input.value='0';input.dispatchEvent(new Event('input'))})});
+    function px(index){return 25+index*(canvas.width-50)/(MM_EQ_FREQUENCIES.length-1)}
+    function py(gain){return 12+(12-gain)*(canvas.height-40)/24}
+    function draw(){
+      var w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#020604';ctx.fillRect(0,0,w,h);
+      ctx.lineWidth=1;ctx.strokeStyle='rgba(91,160,104,.18)';[-12,-6,0,6,12].forEach(function(g){var y=py(g);ctx.beginPath();ctx.moveTo(18,y);ctx.lineTo(w-18,y);ctx.stroke()});
+      ctx.strokeStyle='#294e31';MM_EQ_FREQUENCIES.forEach(function(freq,i){var x=px(i);ctx.beginPath();ctx.moveTo(x,10);ctx.lineTo(x,h-25);ctx.stroke()});
+      ctx.beginPath();gains.forEach(function(g,i){var x=px(i),y=py(g);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.strokeStyle='#91ff9d';ctx.lineWidth=3;ctx.shadowColor='rgba(145,255,157,.45)';ctx.shadowBlur=6;ctx.stroke();ctx.shadowBlur=0;
+      ctx.font='13px "Roboto Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      gains.forEach(function(g,i){var x=px(i),y=py(g);ctx.beginPath();ctx.arc(x,y,i===active?8:6,0,Math.PI*2);ctx.fillStyle=i===active?'#fff5a6':'#91ff9d';ctx.fill();ctx.fillStyle='#789681';ctx.fillText(label(MM_EQ_FREQUENCIES[i]),x,h-11)});
+    }
+    function save(){localStorage.setItem('mm-eq-gains',JSON.stringify(gains))}
+    function applyAll(){gains.forEach(function(gain,index){applyBand(index,gain)});draw()}
+    function update(e){var r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;active=Math.max(0,Math.min(9,Math.round((x-25)/(canvas.width-50)*9)));gains[active]=Math.max(-12,Math.min(12,Math.round((12-(y-12)*24/(canvas.height-40))*2)/2));applyBand(active,gains[active]);save();readout.textContent=label(MM_EQ_FREQUENCIES[active])+' Hz  '+(gains[active]>0?'+':'')+gains[active].toFixed(1)+' dB';draw()}
+    canvas.addEventListener('pointerdown',function(e){dragging=true;canvas.setPointerCapture(e.pointerId);update(e)});canvas.addEventListener('pointermove',function(e){if(dragging)update(e)});canvas.addEventListener('pointerup',function(){dragging=false});canvas.addEventListener('pointercancel',function(){dragging=false});
+    canvas.addEventListener('keydown',function(e){if(active<0)active=0;if(e.key==='ArrowLeft')active=Math.max(0,active-1);else if(e.key==='ArrowRight')active=Math.min(9,active+1);else if(e.key==='ArrowUp')gains[active]=Math.min(12,gains[active]+.5);else if(e.key==='ArrowDown')gains[active]=Math.max(-12,gains[active]-.5);else return;e.preventDefault();applyBand(active,gains[active]);save();readout.textContent=label(MM_EQ_FREQUENCIES[active])+' Hz  '+(gains[active]>0?'+':'')+gains[active].toFixed(1)+' dB';draw()});
+    q('#mm-eq-reset').addEventListener('click',function(){gains=gains.map(function(){return 0});active=-1;readout.textContent='FLAT 0 dB';save();applyAll()});
     window.addEventListener('mm-audio-source',applyAll);applyAll();
   }
 
