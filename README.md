@@ -11,6 +11,7 @@ Main Features:
 - Integrated S-meter and audio spectrum;
 - Persistent RX Control Deck and responsive 10-band parametric equalizer;
 - Extended DAB data info panel;
+- Opus Stereo Audio
 - DAB Dynamic Label (Radiotext / now playing) with byte-identical 32-bit float PCM output;
 - C-QUAM * AM STEREO! Sometimes I test my hAckMstereo software on 1530 Khz so you can try it!
 - DAB+ stereo playback with dynamic support for 32 and 48 kHz;
@@ -98,9 +99,10 @@ Contiene:
 - RX Control Deck sempre visibile ed equalizzatore parametrico responsive a 10 bande.
 - Pannello dati DAB esteso.
 - Dynamic Label DAB (Radiotext / brano in onda) con uscita PCM float a 32 bit invariata.
-- C-QUAM * AM STEREO! Ogni tanto sono in test con hAckMstereo su 1530 KHz così puoi provarlo!
+- C-QUAM * AM STEREO! Ogni tanto sono in test con hAckMstereo su 1575 KHz così puoi provarlo!
 - Riproduzione stereo DAB+ con supporto dinamico per 32 e 48 kHz.
 - Registrazione stereo a 192 kHz, MP3 a 48 kHz.
+- Audio Opus Stereo
 - Larghezza di banda AM fino a 15+15 kHz.
 - FM stereo e regolazione della larghezza di banda.
 - Regolazione della separazione stereo.
