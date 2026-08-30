@@ -1,5 +1,7 @@
 (function(){
   'use strict';
+  var MM_VERSION='1.3.0';
+  var MM_EQ_FREQUENCIES=[31,62,125,250,500,1000,2000,4000,8000,16000];
   window.openPropagationMap=function(){
     var mapWindow=window.open('https://vhf.dxview.org/map?center=47.19,10.12,6.3','openwebrx-propagation','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');
     if(mapWindow)mapWindow.focus();
@@ -48,7 +50,7 @@
     if(q('#mm-interface-footer'))return;
     var page=q('#webrx-page-container');if(!page)return;
     var footer=make('footer','mm-interface-footer');
-    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v1.2.0</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span>';
+    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v'+MM_VERSION+'</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span>';
     page.appendChild(footer);
   }
 
@@ -88,26 +90,14 @@
   function ensureReceiver(){
     var p=q('#openwebrx-panel-receiver');
     if(!p)return;
-    p.style.display='block';p.style.visibility='visible';
+    p.style.setProperty('display','block','important');p.style.setProperty('visibility','visible','important');
+    p.style.setProperty('transform','none','important');p.style.setProperty('height','auto','important');p.movement='expand';
     var right=q('#openwebrx-panels-container-right');
     if(right && p.parentNode!==right)right.insertBefore(p,right.firstChild);
     var toggle=q('[data-toggle-panel="openwebrx-panel-receiver"]');
-    if(toggle&&!toggle.dataset.mmStateSync){
-      toggle.dataset.mmStateSync='1';
-      toggle.addEventListener('click',function(){
-        var t=p.style.transform||'';p.movement=/rotate[XY]\((?:90|270)deg\)/.test(t)?'collapse':'expand';
-        if(toggle.dataset.mmRetry)return;
-        setTimeout(function(){
-          if((p.style.transform||'')===t){toggle.dataset.mmRetry='1';toggle.click();delete toggle.dataset.mmRetry}
-        },80);
-      },true);
-    }
-    if(!p.dataset.mmInitialOpen&&!p.dataset.mmInitialOpening){
-      p.dataset.mmInitialOpening='1';
-      setTimeout(function(){
-        if(p.getBoundingClientRect().height<20&&toggle)toggle.click();
-        delete p.dataset.mmInitialOpening;p.dataset.mmInitialOpen='1';
-      },2500);
+    if(toggle&&!toggle.dataset.mmLockedOpen){
+      toggle.dataset.mmLockedOpen='1';toggle.setAttribute('aria-disabled','true');toggle.title='RX Control Deck sempre aperto';
+      toggle.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();ensureReceiver()},true);
     }
   }
 
@@ -140,19 +130,46 @@
   function installAudioTap(){
     if(window.__mmAudioTapInstalled)return;
     window.__mmAudioTapInstalled=true;
-    window.__mmAudioSources=[];
+    window.__mmAudioSources=[];window.__mmEqualizers=[];
     if(!window.AudioNode||!AudioNode.prototype.connect)return;
     var nativeConnect=AudioNode.prototype.connect;
     AudioNode.prototype.connect=function(destination){
-      var result=nativeConnect.apply(this,arguments);
+      if(this.__mmBypassEq)return nativeConnect.apply(this,arguments);
       try{
         if(this.context&&destination===this.context.destination){
+          var context=this.context,filters=MM_EQ_FREQUENCIES.map(function(freq){
+            var filter=context.createBiquadFilter();filter.type='peaking';filter.frequency.value=freq;filter.Q.value=1.35;filter.gain.value=0;return filter;
+          });
+          nativeConnect.call(this,filters[0]);
+          for(var i=0;i<filters.length-1;i++)nativeConnect.call(filters[i],filters[i+1]);
+          nativeConnect.call(filters[filters.length-1],destination);
+          window.__mmEqualizers.push({source:this,filters:filters});
           if(window.__mmAudioSources.indexOf(this)<0)window.__mmAudioSources.push(this);
-          window.dispatchEvent(new Event('mm-audio-source'));
+          window.dispatchEvent(new CustomEvent('mm-audio-source',{detail:{source:this,filters:filters}}));
+          return destination;
         }
       }catch(e){}
-      return result;
+      return nativeConnect.apply(this,arguments);
     };
+  }
+
+  function addAudioEqualizer(){
+    var module=q('#mm-audio-module');if(!module||q('#mm-audio-eq'))return;
+    var eq=make('section','mm-audio-eq'),head=make('div','mm-eq-head'),bands=make('div','mm-eq-bands');
+    head.innerHTML='<span>10-BAND PARAMETRIC EQ</span><button type="button" id="mm-eq-reset">FLAT</button>';eq.appendChild(head);eq.appendChild(bands);module.appendChild(eq);
+    var saved=[];try{saved=JSON.parse(localStorage.getItem('mm-eq-gains')||'[]')}catch(e){}
+    function label(freq){return freq>=1000?(freq/1000)+'k':String(freq)}
+    function applyBand(index,gain){(window.__mmEqualizers||[]).forEach(function(chain){if(chain.filters[index])chain.filters[index].gain.value=gain})}
+    MM_EQ_FREQUENCIES.forEach(function(freq,index){
+      var band=make('label',null,'mm-eq-band'),gain=isFinite(saved[index])?Math.max(-12,Math.min(12,saved[index])):0;
+      band.innerHTML='<output>'+gain.toFixed(0)+'</output><input type="range" min="-12" max="12" step="1" value="'+gain+'" aria-label="'+freq+' Hz gain"><span>'+label(freq)+'</span>';
+      var input=q('input',band),output=q('output',band);
+      input.addEventListener('input',function(){var value=parseFloat(input.value)||0;output.value=value.toFixed(0);applyBand(index,value);save()});bands.appendChild(band);
+    });
+    function save(){localStorage.setItem('mm-eq-gains',JSON.stringify(qa('input',bands).map(function(input){return parseFloat(input.value)||0})))}
+    function applyAll(){qa('input',bands).forEach(function(input,index){applyBand(index,parseFloat(input.value)||0)})}
+    q('#mm-eq-reset').addEventListener('click',function(){qa('input',bands).forEach(function(input){input.value='0';input.dispatchEvent(new Event('input'))})});
+    window.addEventListener('mm-audio-source',applyAll);applyAll();
   }
 
   function addAudioAnalyzer(){
@@ -175,7 +192,7 @@
         if(!node||!node.context)return false;
         analyser=node.context.createAnalyser();
         analyser.fftSize=2048;analyser.smoothingTimeConstant=.72;analyser.minDecibels=-105;analyser.maxDecibels=-15;
-        silentGain=node.context.createGain();silentGain.gain.value=0;
+        silentGain=node.context.createGain();silentGain.gain.value=0;silentGain.__mmBypassEq=true;
         node.connect(analyser);analyser.connect(silentGain);silentGain.connect(node.context.destination);
         connectedNode=node;data=new Uint8Array(analyser.frequencyBinCount);return true;
       }catch(e){analyser=null;data=null;connectedNode=null}
@@ -197,7 +214,7 @@
       for(var i=0;i<bins;i++){var xx=i/(bins-1)*w,yy=h-(data[i]/255)*(h-8)-4;if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy)}
       ctx.strokeStyle='#91ff9d';ctx.lineWidth=2;ctx.shadowColor='rgba(145,255,157,.45)';ctx.shadowBlur=5;ctx.stroke();ctx.shadowBlur=0;
     }
-    draw();
+    draw();addAudioEqualizer();
   }
 
   function validOptions(select){
@@ -368,7 +385,7 @@
   }
 
   function clock(){var e=q('#mm-utc-clock');if(e)e.textContent=new Date().toISOString().slice(11,19)+' UTC'}
-  function applySmallFixes(){placeControlsBeforeModes();addFilterBandwidthControl();syncFilterBandwidthControl();addInterfaceFooter();ensureReceiver();placeNativeSettings();moveNativeSignalModule();buildModeButtons();arrangeWaterfallRangeControls();polishControls();ensureSpectrum();addSpectrumHeightControl();syncRecordingButton()}
+  function applySmallFixes(){placeControlsBeforeModes();addFilterBandwidthControl();syncFilterBandwidthControl();addInterfaceFooter();ensureReceiver();placeNativeSettings();moveNativeSignalModule();buildModeButtons();arrangeWaterfallRangeControls();polishControls();ensureSpectrum();addSpectrumHeightControl();syncRecordingButton();addAudioEqualizer()}
   function init(){
     installAudioTap();retitle();document.body.classList.add('mm-console-v4');
     setTimeout(addFilterBandwidthControl,0);
