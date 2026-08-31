@@ -31,17 +31,21 @@ class ClientAudioChain(Chain):
         self.clientRate = clientRate
         self.nrEnabled = nrEnabled
         self.nrThreshold = nrThreshold
-        self.compression = compression
+        self.compression = "none"
+        self.initialCompression = compression
         self.channels = channels
         workers = []
         converter = self._buildConverter()
         if not converter.empty():
             workers += [converter]
-        if compression == "adpcm":
-            workers += [AdpcmEncoder(sync=True)]
-        elif compression == "opus":
-            workers += [OpusEncoder(channels, clientRate)]
         super().__init__(workers)
+
+    def start(self) -> None:
+        super().start()
+        if self.initialCompression is not None:
+            compression = self.initialCompression
+            self.initialCompression = None
+            self.setAudioCompression(compression)
 
     def _buildConverter(self):
         return Converter(self.format, self.inputRate, self.clientRate, self.nrEnabled, self.nrThreshold)
