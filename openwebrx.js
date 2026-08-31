@@ -917,7 +917,7 @@ function on_ws_recv(evt) {
                         if ('audio_compression' in config) {
                             var audio_compression = config['audio_compression'];
                             audioEngine.setCompression(audio_compression);
-                            divlog("Audio stream is " + ((audio_compression === "adpcm") ? "compressed" : "uncompressed") + ".");
+                            divlog("Audio stream: " + (audio_compression === "opus" ? "Opus 96 kbps" : (audio_compression === "adpcm" ? "ADPCM" : "PCM uncompressed")) + ".");
                         }
                         if ('fft_compression' in config) {
                             fft_compression = config['fft_compression'];

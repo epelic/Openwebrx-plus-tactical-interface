@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var MM_VERSION='1.3.1';
+  var MM_VERSION='1.4.0';
   var MM_EQ_FREQUENCIES=[31,62,125,250,500,1000,2000,4000,8000,16000];
   window.openPropagationMap=function(){
     var mapWindow=window.open('https://vhf.dxview.org/map?center=47.19,10.12,6.3','openwebrx-propagation','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');

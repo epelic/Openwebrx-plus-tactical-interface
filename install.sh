@@ -78,6 +78,9 @@ DAB_WRAPPER_TARGET=""
 DAB_DLS_BINARY="/usr/local/lib/openwebrx/dablin-dls"
 DSP_TARGET=""
 MODES_TARGET=""
+CLIENT_AUDIO_TARGET=""
+GENERAL_SETTINGS_TARGET=""
+OPUS_ENCODER_TARGET="/usr/local/lib/openwebrx/opus-encode-96k"
 SETTINGS_FILE="/var/lib/openwebrx/settings.json"
 if ((INSTALL_BACKEND)); then
     BACKEND_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
@@ -97,9 +100,15 @@ if ((INSTALL_BACKEND)); then
         -type f -path '*/owrx/dsp.py' -print -quit 2>/dev/null || true)"
     MODES_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
         -type f -path '*/owrx/modes.py' -print -quit 2>/dev/null || true)"
-    [[ -n "$DSP_TARGET" && -n "$MODES_TARGET" ]] || die "OpenWebRX mode registry files not found; C-QUAM cannot be installed"
+    CLIENT_AUDIO_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
+        -type f -path '*/csdr/chain/clientaudio.py' -print -quit 2>/dev/null || true)"
+    GENERAL_SETTINGS_TARGET="$(find /usr/lib/python3/dist-packages /usr/local/lib/python3/dist-packages \
+        -type f -path '*/owrx/controllers/settings/general.py' -print -quit 2>/dev/null || true)"
+    [[ -n "$DSP_TARGET" && -n "$MODES_TARGET" && -n "$CLIENT_AUDIO_TARGET" && -n "$GENERAL_SETTINGS_TARGET" ]] || die "OpenWebRX backend files not found"
     DSP_TARGET="$(readlink -f "$DSP_TARGET")"
     MODES_TARGET="$(readlink -f "$MODES_TARGET")"
+    CLIENT_AUDIO_TARGET="$(readlink -f "$CLIENT_AUDIO_TARGET")"
+    GENERAL_SETTINGS_TARGET="$(readlink -f "$GENERAL_SETTINGS_TARGET")"
     [[ -f "$SETTINGS_FILE" ]] || die "OpenWebRX settings not found: $SETTINGS_FILE"
 fi
 
@@ -113,6 +122,7 @@ if ((INSTALL_BACKEND)); then
     log "DAB stereo chain: $DAB_CHAIN_TARGET"
     log "DAB DLS wrapper: $DAB_WRAPPER_TARGET"
     log "C-QUAM mode registry: $DSP_TARGET, $MODES_TARGET"
+    log "Opus audio backend: $CLIENT_AUDIO_TARGET"
     log "OpenWebRX settings: $SETTINGS_FILE"
 fi
 log "Backup directory: $BACKUP_DIR"
@@ -157,6 +167,8 @@ if ((INSTALL_BACKEND)); then
     [[ -f "$SOURCE_DIR/backend/csdr/module/dablin-metadata-wrapper" ]] || die "DAB metadata wrapper is missing"
     [[ -f "$SOURCE_DIR/backend/build_dablin_dls.sh" && -f "$SOURCE_DIR/backend/dablin-dls.patch" ]] || die "DAB DLS build files are missing"
     [[ -f "$SOURCE_DIR/backend/enable_cquam.py" ]] || die "C-QUAM mode installer is missing"
+    [[ -f "$SOURCE_DIR/backend/csdr/chain/clientaudio.py" && -f "$SOURCE_DIR/backend/owrx/dsp.py" ]] || die "Opus backend files are missing"
+    [[ -f "$SOURCE_DIR/backend/owrx/controllers/settings/general.py" && -f "$SOURCE_DIR/backend/opus/opus_encode_96k.c" ]] || die "Opus settings or encoder source is missing"
     grep -q 'channels=int(match.group(2))' "$SOURCE_DIR/backend/csdr/module/toolbox.py" || die "DAB channel detection is missing"
     grep -q 'setHdInputRate' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB 32/48 kHz switching is missing"
     grep -q 'StereoResampler' "$SOURCE_DIR/lib/AudioEngine.js" || die "DAB stereo resampler is missing"
@@ -170,10 +182,17 @@ if ((INSTALL_BACKEND)); then
     grep -q 'class Cquam' "$SOURCE_DIR/backend/csdr/chain/analog.py" || die "C-QUAM decoder is missing"
     grep -q "modulation === 'cquam'" "$SOURCE_DIR/lib/AudioEngine.js" || die "browser C-QUAM stereo support is missing"
     grep -q 'new AudioRecorder(48000, 192, 2)' "$SOURCE_DIR/lib/AudioEngine.js" || die "192 kb/s, 48 kHz stereo MP3 recording is missing"
+    grep -q 'OpusStreamDecoder' "$SOURCE_DIR/lib/AudioEngine.js" || die "browser Opus decoder is missing"
+    grep -q 'Option("opus", "Opus 96 kbps")' "$SOURCE_DIR/backend/owrx/controllers/settings/general.py" || die "Opus settings option is missing"
+    command -v gcc >/dev/null || die "gcc is required to build the Opus encoder"
+    command -v pkg-config >/dev/null && pkg-config --exists opus || die "libopus-dev and pkg-config are required"
     grep -q 'Mp3Encoder(this.channels, sampleRate, kbps)' "$SOURCE_DIR/lib/AudioEngine.js" || die "stereo MP3 encoder is missing"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/module/toolbox.py"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/chain/analog.py"
     python3 -m py_compile "$SOURCE_DIR/backend/csdr/chain/dablin.py"
+    python3 -m py_compile "$SOURCE_DIR/backend/csdr/chain/clientaudio.py"
+    python3 -m py_compile "$SOURCE_DIR/backend/owrx/dsp.py"
+    python3 -m py_compile "$SOURCE_DIR/backend/owrx/controllers/settings/general.py"
     python3 -m py_compile "$SOURCE_DIR/backend/enable_cquam.py"
     python3 -m json.tool "$SETTINGS_FILE" >/dev/null || die "OpenWebRX settings JSON is invalid"
 fi
@@ -189,6 +208,9 @@ if ((INSTALL_BACKEND)); then
     [[ ! -f "$DAB_DLS_BINARY" ]] || cp -a "$DAB_DLS_BINARY" "$BACKUP_DIR/backend/dablin-dls"
     cp -a "$DSP_TARGET" "$BACKUP_DIR/backend/dsp.py"
     cp -a "$MODES_TARGET" "$BACKUP_DIR/backend/modes.py"
+    cp -a "$CLIENT_AUDIO_TARGET" "$BACKUP_DIR/backend/clientaudio.py"
+    cp -a "$GENERAL_SETTINGS_TARGET" "$BACKUP_DIR/backend/general.py"
+    [[ ! -f "$OPUS_ENCODER_TARGET" ]] || cp -a "$OPUS_ENCODER_TARGET" "$BACKUP_DIR/backend/opus-encode-96k"
     cp -a "$SETTINGS_FILE" "$BACKUP_DIR/settings.json"
 fi
 
@@ -197,6 +219,8 @@ if ((INSTALL_BACKEND)); then
     bash "$SOURCE_DIR/backend/build_dablin_dls.sh" "$SOURCE_DIR/backend/dablin-dls.patch"
     grep -a -q 'DABlin v1.14.0' "$DAB_DLS_BINARY" || die "DAB Dynamic Label decoder is not based on version 1.14.0"
     grep -a -q '32bit float' "$DAB_DLS_BINARY" || die "DAB Dynamic Label decoder lacks float PCM output"
+    log "building 48 kHz Opus encoder at 96 kbps"
+    gcc -O2 -Wall -Wextra "$SOURCE_DIR/backend/opus/opus_encode_96k.c" -o "$WORK_DIR/opus-encode-96k" $(pkg-config --cflags --libs opus)
 fi
 
 SERVICE_EXISTS=0
@@ -219,36 +243,15 @@ if ((INSTALL_BACKEND)); then
     install -m 0644 "$SOURCE_DIR/backend/csdr/chain/analog.py" "$ANALOG_TARGET"
     install -m 0644 "$SOURCE_DIR/backend/csdr/chain/dablin.py" "$DAB_CHAIN_TARGET"
     install -m 0755 "$SOURCE_DIR/backend/csdr/module/dablin-metadata-wrapper" "$DAB_WRAPPER_TARGET"
+    install -m 0644 "$SOURCE_DIR/backend/csdr/chain/clientaudio.py" "$CLIENT_AUDIO_TARGET"
+    install -m 0644 "$SOURCE_DIR/backend/owrx/dsp.py" "$DSP_TARGET"
+    install -m 0644 "$SOURCE_DIR/backend/owrx/controllers/settings/general.py" "$GENERAL_SETTINGS_TARGET"
+    install -m 0755 "$WORK_DIR/opus-encode-96k" "$OPUS_ENCODER_TARGET"
     log "registering the C-QUAM demodulator"
     python3 "$SOURCE_DIR/backend/enable_cquam.py" --dsp "$DSP_TARGET" --modes "$MODES_TARGET"
     python3 "$SOURCE_DIR/backend/enable_cquam.py" --check --dsp "$DSP_TARGET" --modes "$MODES_TARGET"
-    python3 -m py_compile "$DSP_TARGET" "$MODES_TARGET"
-    log "disabling mono ADPCM compression for DAB stereo"
-    python3 - "$SETTINGS_FILE" <<'PY'
-import json
-import os
-import sys
-import tempfile
-
-path = sys.argv[1]
-with open(path, "r", encoding="utf-8") as source:
-    settings = json.load(source)
-settings["audio_compression"] = "none"
-fd, temporary = tempfile.mkstemp(prefix="settings.", suffix=".json", dir=os.path.dirname(path))
-try:
-    with os.fdopen(fd, "w", encoding="utf-8") as target:
-        json.dump(settings, target, indent=4)
-        target.write("\n")
-    os.chmod(temporary, os.stat(path).st_mode)
-    os.chown(temporary, os.stat(path).st_uid, os.stat(path).st_gid)
-    os.replace(temporary, path)
-except BaseException:
-    try:
-        os.unlink(temporary)
-    except FileNotFoundError:
-        pass
-    raise
-PY
+    python3 -m py_compile "$DSP_TARGET" "$MODES_TARGET" "$CLIENT_AUDIO_TARGET" "$GENERAL_SETTINGS_TARGET"
+    log "preserving the selected audio transport (Opus, ADPCM or None)"
 fi
 
 [[ -s "$TARGET/index.html" && -s "$TARGET/lib/AudioProcessor.js" ]] || die "post-installation file check failed"
@@ -260,7 +263,7 @@ if ((INSTALL_BACKEND)); then
 import json
 import sys
 with open(sys.argv[1], "r", encoding="utf-8") as source:
-    assert json.load(source).get("audio_compression") == "none"
+    assert json.load(source).get("audio_compression") in ("opus", "adpcm", "none")
 PY
     grep -q 'setHdInputRate' "$TARGET/lib/AudioEngine.js" || die "installed DAB sample-rate switching is missing"
     grep -q 'StereoResampler' "$TARGET/lib/AudioEngine.js" || die "installed DAB stereo resampler is missing"
@@ -278,6 +281,9 @@ PY
     grep -q 'class Cquam' "$ANALOG_TARGET" || die "installed C-QUAM decoder is missing"
     grep -q 'elif demod == "cquam"' "$DSP_TARGET" || die "installed C-QUAM DSP registration is missing"
     grep -q 'AnalogMode("cquam", "C-QUAM"' "$MODES_TARGET" || die "installed C-QUAM mode registration is missing"
+    grep -q 'OpusStreamDecoder' "$TARGET/lib/AudioEngine.js" || die "installed browser Opus decoder is missing"
+    grep -q 'Option("opus", "Opus 96 kbps")' "$GENERAL_SETTINGS_TARGET" || die "installed Opus settings option is missing"
+    [[ -x "$OPUS_ENCODER_TARGET" ]] || die "installed Opus encoder is missing"
 fi
 
 if ((SERVICE_EXISTS)); then
@@ -301,6 +307,7 @@ if ((SERVICE_EXISTS)); then
         grep -q "modulation === 'cquam'" "$LIVE_BUNDLE" || die "live receiver bundle has no C-QUAM stereo support; backup: $BACKUP_DIR"
         grep -q 'formattedEnsembleId' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB Ensemble ID normalization; backup: $BACKUP_DIR"
         grep -q 'dab-radiotext' "$LIVE_BUNDLE" || die "live receiver bundle has no DAB Radiotext UI; backup: $BACKUP_DIR"
+        grep -q 'OpusStreamDecoder' "$LIVE_BUNDLE" || die "live receiver bundle has no Opus decoder; backup: $BACKUP_DIR"
     fi
 elif ((SERVICE_ACTIVE)); then
     log "OpenWebRX service was active but could not be restarted automatically"

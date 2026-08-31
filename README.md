@@ -1,6 +1,6 @@
 # OpenWebRX+ Tactical Interface
 
-Current version: **1.3.1**
+Current version: **1.4.0**
 
 Customization of OpenWebRX+ for Max Mountain Station but available for all!
 *** WARNING! This interface is intentionally made to work on DESKTOP mode or big screens, not mobile size screens ***
@@ -10,6 +10,7 @@ Main Features:
 - Responsive receiver interface;
 - Integrated S-meter and audio spectrum;
 - Persistent RX Control Deck and responsive 10-band parametric equalizer;
+- Owner-selectable Opus transport at 96 kbps, stereo/48 kHz for HD audio modes;
 - Extended DAB data info panel;
 - Opus Stereo Audio
 - DAB Dynamic Label (Radiotext / now playing) with byte-identical 32-bit float PCM output;
@@ -48,7 +49,6 @@ Check the new interface live here: https://maxmountainstation.ddns.net/
 
 TO DO LIST:
 
-- Opus stream at 96 Kbps stereo with ADPCM fallback
 - Resolve the clipping issue on DAB audio when converted by Dablin.
 
 ## Automatic installation on Raspberry Pi
@@ -87,7 +87,7 @@ https://paypal.me/steelwood?locale.x=it_IT&country.x=IT
 
 # OpenWebRX+ Tactical Interface
 
-Versione corrente: **1.3.1**
+Versione corrente: **1.4.0**
 
 Personalizzazione di OpenWebRX+ per Max Mountain Station ma disponibile per tutti!
 *** ATTENZIONE - L'interfaccia è volutamente scritta per funzionare su computer e schermi almeno full HD, non su smartphone. ***
@@ -97,6 +97,7 @@ Contiene:
 - interfaccia ricevitore responsive.
 - S-meter e spettro audio integrati.
 - RX Control Deck sempre visibile ed equalizzatore parametrico responsive a 10 bande.
+- Trasporto Opus selezionabile dal proprietario a 96 kbps, stereo/48 kHz per le modalità HD.
 - Pannello dati DAB esteso.
 - Dynamic Label DAB (Radiotext / brano in onda) con uscita PCM float a 32 bit invariata.
 - C-QUAM * AM STEREO! Ogni tanto sono in test con hAckMstereo su 1575 KHz così puoi provarlo!
