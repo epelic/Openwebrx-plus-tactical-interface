@@ -1,6 +1,6 @@
 # OpenWebRX+ Tactical Interface
 
-Current version: **1.4.0**
+Current version: **1.4.1**
 
 Customization of OpenWebRX+ for Max Mountain Station but available for all!
 *** WARNING! This interface is intentionally made to work on DESKTOP mode or big screens, not mobile size screens ***
@@ -87,7 +87,7 @@ https://paypal.me/steelwood?locale.x=it_IT&country.x=IT
 
 # OpenWebRX+ Tactical Interface
 
-Versione corrente: **1.4.0**
+Versione corrente: **1.4.1**
 
 Personalizzazione di OpenWebRX+ per Max Mountain Station ma disponibile per tutti!
 *** ATTENZIONE - L'interfaccia è volutamente scritta per funzionare su computer e schermi almeno full HD, non su smartphone. ***

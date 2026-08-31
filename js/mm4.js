@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var MM_VERSION='1.4.0';
+  var MM_VERSION='1.4.1';
   var MM_EQ_FREQUENCIES=[31,62,125,250,500,1000,2000,4000,8000,16000];
   window.openPropagationMap=function(){
     var mapWindow=window.open('https://vhf.dxview.org/map?center=47.19,10.12,6.3','openwebrx-propagation','popup=yes,width=1200,height=800,resizable=yes,scrollbars=yes');
@@ -42,8 +42,8 @@
   function make(tag,id,cls){var e=document.createElement(tag);if(id)e.id=id;if(cls)e.className=cls;return e}
 
   function retitle(){
-    document.title='Max Mountain Station | Tactical SDR Console';
-    var t=q('.webrx-rx-title'); if(t)t.textContent="MAX'S MOUNTAINS STATION VHF - UHF";
+    /* Receiver name, location, locator and ASL are managed by Header.setDetails()
+       from the values saved in OpenWebRX Settings. */
   }
 
   function addInterfaceFooter(){
