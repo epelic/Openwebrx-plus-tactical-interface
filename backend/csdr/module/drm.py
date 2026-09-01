@@ -8,7 +8,7 @@ class DrmModule(ExecModule):
     def __init__(self, socketPath: str = None):
         # Compose basic command line
         cmd = [
-            "dream", "-c", "6", "--sigsrate", "48000",
+            "dream", "-c", "6", "-b", "0", "--sigsrate", "48000",
             "--audsrate", "48000", "-I", "-", "-O", "-",
         ]
 
