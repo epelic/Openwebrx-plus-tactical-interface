@@ -1,0 +1,56 @@
+diff --git a/src/util/StatusBroadcast.cpp b/src/util/StatusBroadcast.cpp
+index e5742fa..998836c 100644
+--- a/src/util/StatusBroadcast.cpp
++++ b/src/util/StatusBroadcast.cpp
+@@ -199,6 +199,7 @@ void CStatusBroadcast::BroadcastLoop()
+     {
+         // Accept new client connections
+         AcceptNewClients();
++        ReadClientCommands();
+ 
+         // Collect status and broadcast
+         std::string strJSON = CollectStatusJSON();
+@@ -229,6 +230,29 @@ void CStatusBroadcast::AcceptNewClients()
+ #endif
+ }
+ 
++void CStatusBroadcast::ReadClientCommands()
++{
++#ifndef _WIN32
++    if (pDRMReceiver == nullptr)
++        return;
++
++    char buffer[128];
++    for (int fd : vecClientFds)
++    {
++        ssize_t count = recv(fd, buffer, sizeof(buffer) - 1, MSG_DONTWAIT);
++        if (count <= 0)
++            continue;
++        buffer[count] = '\0';
++        int service = -1;
++        if (sscanf(buffer, "audio_service=%d", &service) == 1 && service >= 0 && service < 4)
++        {
++            pDRMReceiver->GetParameters()->SetCurSelAudioService(service);
++            fprintf(stderr, "StatusBroadcast: Selected audio service %d\n", service);
++        }
++    }
++#endif
++}
++
+ void CStatusBroadcast::BroadcastToClients(const std::string& strJSON)
+ {
+ #ifndef _WIN32
+diff --git a/src/util/StatusBroadcast.h b/src/util/StatusBroadcast.h
+index 43adac8..8d36550 100644
+--- a/src/util/StatusBroadcast.h
++++ b/src/util/StatusBroadcast.h
+@@ -85,6 +85,9 @@ private:
+      */
+     void AcceptNewClients();
+ 
++    /** Read optional line-based control commands from connected clients. */
++    void ReadClientCommands();
++
+     /**
+      * @brief Broadcast JSON status to all connected clients
+      * @param strJSON JSON string to broadcast

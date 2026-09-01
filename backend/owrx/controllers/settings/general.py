@@ -233,18 +233,12 @@ class GeneralSettingsController(SettingsFormController):
                 "Display settings",
                 DropdownInput(
                     "ui_theme",
-                    "User interface color theme",
+                    "Max Mountain interface palette",
                     options=[
-                        Option("default", "Gray"),
-                        Option("brown", "Brown"),
-                        Option("red", "Red"),
-                        Option("green", "Green"),
-                        Option("khaki", "Khaki"),
-                        Option("blue", "Blue"),
-                        Option("navy", "Navy"),
-                        Option("black", "Black"),
-                        Option("night", "Night")
-                    ]
+                        Option("green", "Green Army"),
+                        Option("navy", "Blue Navy")
+                    ],
+                    infotext="Switches the complete tactical console between the green Army palette and the blue Navy palette."
                 ),
                 DropdownInput(
                     "tuning_precision",

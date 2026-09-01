@@ -177,15 +177,24 @@
     if(groups)groups.remove();
     qa(':scope > *',host).forEach(function(e){if(!e.classList.contains('mm-mode-groups'))e.classList.add('mm-native-mode-control')});
     groups=make('div',null,'mm-mode-groups');groups.dataset.signature=signature;
+    var analogNames=['FM','WFM','AM','LSB','USB','CW','CWL','CWU','SAM','C-QUAM','CQUAM','SSTV','CW DECODER','CW SKIMMER','FAX'];
+    var entries=[];
     selects.slice(0,2).forEach(function(select,index){
+      validOptions(select).forEach(function(opt){
+        var name=(opt.textContent||opt.value).trim();
+        entries.push({select:select,index:index,opt:opt,name:name,analog:analogNames.indexOf(name.toUpperCase())>=0});
+      });
+    });
+    [true,false].forEach(function(isAnalog,index){
       var group=make('div',null,'mm-mode-group'),label=make('div',null,'mm-mode-label'),keys=make('div',null,'mm-mode-keys');
       label.textContent=index===0?'ANALOG':'DIGITAL';
-      var opts=validOptions(select);
-      if(!opts.length)group.classList.add('mm-empty');
-      opts.forEach(function(opt){
-        var b=make('button',null,'mm-mode-key');b.type='button';b.textContent=(opt.textContent||opt.value).trim();b.dataset.value=opt.value;b.dataset.mmSelect=String(index);
+      var classified=entries.filter(function(entry){return entry.analog===isAnalog});
+      if(!classified.length)group.classList.add('mm-empty');
+      classified.forEach(function(entry){
+        var opt=entry.opt,select=entry.select;
+        var b=make('button',null,'mm-mode-key');b.type='button';b.textContent=entry.name;b.dataset.value=opt.value;b.dataset.mmSelect=String(entry.index);
         b.addEventListener('click',function(){
-          var nativeButton=index===0&&nativeModeButton(host,opt.value);
+          var nativeButton=entry.index===0&&nativeModeButton(host,opt.value);
           if(nativeButton)nativeButton.click();
           else if(String(select.value)!==String(opt.value))triggerSelect(select,opt.value);
           setTimeout(syncModeButtons,25);
@@ -193,8 +202,8 @@
         keys.appendChild(b);
       });
       group.appendChild(label);group.appendChild(keys);groups.appendChild(group);
-      select.addEventListener('change',syncModeButtons);
     });
+    selects.slice(0,2).forEach(function(select){select.addEventListener('change',syncModeButtons)});
     if(!host.__mmModeObserver){
       host.__mmModeObserver=new MutationObserver(syncModeButtons);
       host.__mmModeObserver.observe(host,{attributes:true,subtree:true,attributeFilter:['class','selected']});
