@@ -50,7 +50,7 @@
     if(q('#mm-interface-footer'))return;
     var page=q('#webrx-page-container');if(!page)return;
     var footer=make('footer','mm-interface-footer');
-    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v'+MM_VERSION+'</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span><span style="display:inline-flex;align-items:center;gap:4px;font-size:.82em;letter-spacing:.2px;text-transform:none">Made with ❤️ in Lombardy <img src="https://www.freewaves.it/assets/lombardy-flag.png" alt="Lombardy flag" width="21" height="14"> Italy <img src="https://www.freewaves.it/assets/italy-flag.png" alt="Italian flag" width="21" height="14"></span>';
+    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v'+MM_VERSION+'</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span><span class="mm-footer-signature">Made with ❤️ in Lombardy <img src="https://www.freewaves.it/assets/lombardy-flag.png" alt="Lombardy flag" width="21" height="14"> Italy <img src="https://www.freewaves.it/assets/italy-flag.png" alt="Italian flag" width="21" height="14"></span>';
     page.appendChild(footer);
   }
 
