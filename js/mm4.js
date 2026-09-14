@@ -46,12 +46,12 @@
        from the values saved in OpenWebRX Settings. */
   }
 
-  function addInterfaceFooter(){
-    if(q('#mm-interface-footer'))return;
-    var page=q('#webrx-page-container');if(!page)return;
-    var footer=make('footer','mm-interface-footer');
-    footer.innerHTML='<span>MAX\'S MOUNTAIN STATION — TACTICAL INTERFACE v'+MM_VERSION+'</span><span class="mm-footer-separator">•</span><a href="https://www.freewaves.it/" target="_blank" rel="noopener noreferrer">www.freewaves.it</a><span class="mm-footer-separator">•</span><span>ALL RIGHTS RESERVED © 2026</span><span class="mm-footer-signature">Made with ❤️ in Lombardy <img src="https://www.freewaves.it/assets/lombardy-flag.png" alt="Lombardy flag" width="21" height="14"> Italy <img src="https://www.freewaves.it/assets/italy-flag.png" alt="Italian flag" width="21" height="14"></span>';
-    page.appendChild(footer);
+  function addLogSignature(){
+    var old=q('#mm-interface-footer');if(old)old.remove();
+    var panel=q('#openwebrx-panel-log');if(!panel||q('#mm-log-signature',panel))return;
+    var signature=make('div','mm-log-signature');
+    signature.innerHTML='Made with ❤️ in Lombardy <img src="https://www.freewaves.it/assets/lombardy-flag.png" alt="Lombardy flag" width="21" height="14"> Italy <img src="https://www.freewaves.it/assets/italy-flag.png" alt="Italian flag" width="21" height="14">';
+    panel.insertBefore(signature,panel.firstChild);
   }
 
   function buildWorkspace(){
@@ -63,7 +63,7 @@
     var dock=make('section','mm-decoder-dock'), side=make('aside','mm-sidebar');
     var sh=make('div','mm-sidebar-head');sh.innerHTML='<span>RX CONTROL DECK</span><span id="mm-utc-clock">--:--:-- UTC</span>';
     var scroll=make('div','mm-sidebar-scroll');
-    page.appendChild(ws);ws.appendChild(main);ws.appendChild(side);main.appendChild(spec);main.appendChild(dock);side.appendChild(sh);side.appendChild(scroll);addInterfaceFooter();
+    page.appendChild(ws);ws.appendChild(main);ws.appendChild(side);main.appendChild(spec);main.appendChild(dock);side.appendChild(sh);side.appendChild(scroll);addLogSignature();
     spec.appendChild(waterfall);dock.appendChild(left);scroll.appendChild(right);
     updateDock();
     new MutationObserver(updateDock).observe(left,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
@@ -404,7 +404,7 @@
   }
 
   function clock(){var e=q('#mm-utc-clock');if(e)e.textContent=new Date().toISOString().slice(11,19)+' UTC'}
-  function applySmallFixes(){placeControlsBeforeModes();addFilterBandwidthControl();syncFilterBandwidthControl();addInterfaceFooter();ensureReceiver();placeNativeSettings();moveNativeSignalModule();buildModeButtons();arrangeWaterfallRangeControls();polishControls();ensureSpectrum();addSpectrumHeightControl();syncRecordingButton();addAudioEqualizer()}
+  function applySmallFixes(){placeControlsBeforeModes();addFilterBandwidthControl();syncFilterBandwidthControl();addLogSignature();ensureReceiver();placeNativeSettings();moveNativeSignalModule();buildModeButtons();arrangeWaterfallRangeControls();polishControls();ensureSpectrum();addSpectrumHeightControl();syncRecordingButton();addAudioEqualizer()}
   function init(){
     installAudioTap();retitle();document.body.classList.add('mm-console-v4');
     setTimeout(addFilterBandwidthControl,0);
