@@ -50,7 +50,7 @@
     var old=q('#mm-interface-footer');if(old)old.remove();
     var panel=q('#openwebrx-panel-log');if(!panel||q('#mm-log-signature',panel))return;
     var signature=make('div','mm-log-signature');
-    signature.innerHTML='Made with ❤️ in Lombardy <img src="https://www.freewaves.it/assets/lombardy-flag.png" alt="Lombardy flag" width="21" height="14"> Italy <img src="https://www.freewaves.it/assets/italy-flag.png" alt="Italian flag" width="21" height="14">';
+    signature.innerHTML='This interface is made with ❤️ in Lombardy <img src="https://www.freewaves.it/assets/lombardy-flag.png" alt="Lombardy flag" width="21" height="14"> Italy <img src="https://www.freewaves.it/assets/italy-flag.png" alt="Italian flag" width="21" height="14">';
     panel.insertBefore(signature,panel.firstChild);
   }
 
